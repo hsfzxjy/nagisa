@@ -1,69 +1,7 @@
 import weakref
 import collections
-import typing
-from typing import List, Tuple, Any
-
-_PRIMITIVE_TYPES = (int, float, bool, str)
-_ACCEPTED_TYPES = frozenset([
-    *_PRIMITIVE_TYPES,
-    *(List[x] for x in _PRIMITIVE_TYPES),
-    *(Tuple[x] for x in _PRIMITIVE_TYPES),
-])
-
-def _compatible_with(T1, T2) -> bool:
-
-    if T1 is T2:
-        return True
-
-    if T1 is int and T2 is float:
-        return True
-
-    o_T1 = typing.get_origin(T1)
-    o_T2 = typing.get_origin(T2)
-
-    if o_T1 is o_T2 and o_T1 is not None:
-        return _compatible_with(typing.get_args(T1)[0], typing.get_args(T2)[0])
-
-    return False
-
-def _get_default_value(T):
-    origin_type = typing.get_origin(T)
-    if origin_type is None:
-        return T()
-    return origin_type()
-
-def _infer_type(value, allow_empty_container=False):
-    type_ = type(value)
-    if type_ in (list, tuple):
-        con_type = { list: List, tuple: Tuple }[type_]
-        if len(value) == 0:
-            if not allow_empty_container:
-                raise TypeError('Cannot infer type for empty container {!r}.'.format(value))
-            return con_type
-
-        elem_type = _infer_type(value[0])
-        for i, x in enumerate(value[1:], start=1):
-            if not _compatible_with(_infer_type(x), elem_type):
-                raise TypeError(
-                    'Cannot infer type for container object {!r}, '
-                    'since the {}-th element {!r} has different type as previous.'.format(value, i, x))
-
-        return con_type[elem_type]
-
-    return type_
-
-def _check_type(value, type_) -> bool:
-    return _compatible_with(_infer_type(value), type_)
-
-def _stringify_type(T) -> str:
-
-    origin_type = typing.get_origin(T)
-
-    if origin_type is None: 
-        return T.__name__
-
-    return str(T)
-
+from typing import List, Any
+from nagisa.utils.primitive_typing import *
 
 class NodeMeta:
 
@@ -77,6 +15,9 @@ class NodeMeta:
 
     def is_valid(self):
         return True
+
+class _AttributeSlots:
+    pass
 
 class SchemeNode:
 
@@ -107,56 +48,70 @@ class SchemeNode:
             assert default is not None or type_ is not None, \
                 "At least one of `type_` or `default` should be provided."
 
+            type_ = regularize_type(type_)
             if default is None:
-                default = _get_default_value(type_)
                 final_type = type_
             elif type_ is None:
-                final_type = _infer_type(default)
+                final_type = infer_type(default)
             else:
-                inferred_type = _infer_type(default)
-                assert _compatible_with(inferred_type, type_), \
+                inferred_type = infer_type(default)
+                assert compatible_with(inferred_type, type_), \
                     "Type of `{!r}` is `{!r}`, which could not match with `type_` {!r}.".format(
                         default, inferred_type, type_
                     )
                 final_type = type_
-            assert final_type in _ACCEPTED_TYPES, \
+            assert is_acceptable_type(final_type), \
                 "Type {!r} is not acceptable.".format(final_type)
-            self.__value = default
+            if default is None:
+                default = get_default_value(final_type)
+            self.__value = cast(default, final_type)
         else:
             self.__alias_entries = dict()
             self.__entries = dict()
             final_type = None
 
-        attributes = self.__class__._parse_attributes(attributes)
+        attributes = self.__class__.__parse_attributes(attributes)
         self.__meta = NodeMeta(type_=final_type, attributes=attributes, is_container=is_container)
         self.__parent = weakref.ref(parent) if parent is not None else None
 
         self.__finalized = not is_container
 
     @classmethod
-    def _parse_attributes(cls, attributes):
-        if attributes is None:
-            return ()
-        return tuple(attributes.split())
-        raise NotImplementedError
+    def __parse_attributes(cls, attributes):
+        ns = _AttributeSlots()
 
-    def is_writable(self):
-        return 'writable' in self.__meta.attributes
+        if attributes is None:
+            attributes = []
+
+        if isinstance(attributes, str):
+            attributes = attributes.split()
+
+        ns.writable = False
+        for attr_item in attributes:
+            if attr_item.lower() in ('w', 'writable'):
+                ns.writable = True
+
+        cls._parse_attributes(ns, attributes)
+        return ns
+
+    @classmethod
+    def _parse_attributes(cls, ns, attributes):
+        pass
 
     def __update_value(self, value):
         self.__check_finalized('update value', True)
         self.__check_is_container('update value', False)
 
-        if not self.is_writable():
+        if not self.__meta.attributes.writable:
             raise AttributeError("Cannot update a read-only node.")
 
-        if not _check_type(value, self.__meta.type):
+        if not check_type(value, self.__meta.type):
             raise TypeError(
                 "Cannot update `{!r}` node with value {!r}.".format(
                     self.__meta.type, value
             ))
 
-        self.__value = value
+        self.__value = cast(value, self.__meta.type)
 
     def __getattr__(self, name):
         if name == '__dict__':
@@ -189,7 +144,7 @@ class SchemeNode:
         if name in self.__entries:
             self.__entries[name].__update_value(value)
         else:
-            if not self.is_writable():
+            if not self.__meta.attributes.writable:
                 raise RuntimeError("Cannot set attribute on read-only node.")
 
             self.__add_entry(name, value, attributes="writable")

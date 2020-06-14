@@ -12,10 +12,6 @@ class TestInit(unittest.TestCase):
             [0., float],
             ['', str],
             [False, bool],
-            [(), scheme.Tuple[int]],
-            [(), scheme.Tuple[float]],
-            [(), scheme.Tuple[str]],
-            [(), scheme.Tuple[bool]],
             [[], scheme.List[int]],
             [[], scheme.List[float]],
             [[], scheme.List[str]],
@@ -26,17 +22,16 @@ class TestInit(unittest.TestCase):
             x = scheme.SchemeNode(type_=T)
             self.assertEqual(x._SchemeNode__value, value)
 
-
     def test_init_with_default(self):
         cases = [
             [1, int],
             [1., float],
             ['baz', str],
             [True, bool],
-            [(1, 2,), scheme.Tuple[int]],
-            [(1., 2,), scheme.Tuple[float]],
-            [('baz', 'baz2'), scheme.Tuple[str]],
-            [(True, False), scheme.Tuple[bool]],
+            [(1, 2,), scheme.List[int]],
+            [(1., 2,), scheme.List[float]],
+            [('baz', 'baz2'), scheme.List[str]],
+            [(True, False), scheme.List[bool]],
             [[1, 2,], scheme.List[int]],
             [[1., 2,], scheme.List[float]],
             [['baz', 'baz2'], scheme.List[str]],
@@ -49,17 +44,12 @@ class TestInit(unittest.TestCase):
                 T
             )
 
-    def test_init_with_default(self):
+    def test_init_with_default_and_type(self):
         cases = [
             [1, int],
             [1., float],
             ['baz', str],
             [True, bool],
-            [(1, 2,), scheme.Tuple[int]],
-            [(1, 2,), scheme.Tuple[float]],
-            [(1., 2,), scheme.Tuple[float]],
-            [('baz', 'baz2'), scheme.Tuple[str]],
-            [(True, False), scheme.Tuple[bool]],
             [[1, 2,], scheme.List[int]],
             [[1., 2,], scheme.List[float]],
             [['baz', 'baz2'], scheme.List[str]],
@@ -72,6 +62,15 @@ class TestInit(unittest.TestCase):
                 T
             )
 
+        cases = [
+            [[1, 2,], [int]],
+            [[1., 2,], [float]],
+            [['baz', 'baz2'], [str]],
+            [[True, False], [bool]],
+        ]
+        for value, T in cases:
+            scheme.SchemeNode(default=value, type_=T)
+
     def test_init_with_default_and_type_failure(self):
         cases = [
             [1., int],
@@ -79,8 +78,6 @@ class TestInit(unittest.TestCase):
             ['baz', float],
             [('baz',), str],
             [0, bool],
-            [['baz',], scheme.Tuple[str]],
-            [(1., 2,), scheme.Tuple[int]],
             [{}, dict]
         ]
         for value, T in cases:
@@ -88,10 +85,6 @@ class TestInit(unittest.TestCase):
                 scheme.SchemeNode(default=value, type_=T)
 
         cases = [
-            [(1, 2.,), scheme.Tuple[float]],
-            [[], scheme.Tuple[str]],
-            [(), scheme.Tuple[str]],
-            [[], scheme.Tuple[str]],
             [(), scheme.List[str]],
         ]
         for value, T in cases:
@@ -195,13 +188,15 @@ class TestSetAttr(unittest.TestCase):
             .entry('foo', scheme.SchemeNode(default=(1,), attributes='writable')) \
             .finalize()
         x.foo += (2,)
-        self.assertEqual(x.foo, (1,2))
+        self.assertEqual(x.foo, [1, 2])
+        x.foo = ()
+        self.assertEqual(x.foo, [])
 
     def test_set_attr_wrong_type(self):
         with self.assertRaises(TypeError):
             scheme.SchemeNode(is_container=True) \
                 .entry('foo', scheme.SchemeNode(default=(1,), attributes='writable')) \
-                .finalize().foo = [1]
+                .finalize().foo = ['1']
 
         with self.assertRaises(TypeError):
             scheme.SchemeNode(is_container=True) \
