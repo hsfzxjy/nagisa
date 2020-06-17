@@ -154,7 +154,7 @@ class SchemeNode:
         if name in dir(self):
             raise RuntimeError('Cannot use preserved name "{}" as entry.'.format(name))
 
-        self.__entries[name] = self.new_from_primitive(node, parent=self, attributes=attributes).finalize()
+        self.__entries[name] = self.new_from_primitive(node, parent=self, attributes=attributes)
 
     def entry(self, name, node):
         assert name not in self.__entries, \
@@ -169,6 +169,10 @@ class SchemeNode:
 
         self.__verify_alias()
         self.__finalized = True
+        for entry in self.__entries.values():
+            if entry.__meta.is_container:
+                entry.finalize()
+
         return self
 
     def __check_finalized(self, action: str, value: bool):
