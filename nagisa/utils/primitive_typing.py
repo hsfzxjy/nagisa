@@ -1,4 +1,11 @@
 import typing
+try:
+    # python >= 3.7
+    _generic_alias_base = typing._GenericAlias
+except AttributeError:
+    # python <= 3.6
+    _generic_alias_base = typing.GenericMeta
+
 from typing import List, Tuple, Any
 from collections import namedtuple
 
@@ -14,14 +21,16 @@ _ACCEPTED_TYPES = frozenset([
 ])
 
 def _base_type(T):
-    origin = typing.get_origin(T)
-    if origin is None:
-        return T
+    if _is_list(T):
+        return T.__args__[0]
     else:
-        return typing.get_args(T)[0]
+        return T
 
-def _is_list(T):
-    return T is list or typing.get_origin(T) is list
+def _is_list(T) -> bool:
+    return T in (List, list, Tuple, tuple) or (
+        isinstance(T, _generic_alias_base) and 
+        T.__origin__ in (List, list, Tuple, tuple)
+    )
 
 def is_acceptable_type(T):
     try:
