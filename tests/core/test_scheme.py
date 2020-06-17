@@ -234,3 +234,22 @@ class TestSetAttr(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             x.foo.bar = { 'baz': 1 }
+
+class TestVerbose(unittest.TestCase):
+
+    def test_str(self):
+        x = scheme.SchemeNode(is_container=True) \
+            .entry('foo', 1) \
+            .entry('bar', 
+                scheme.SchemeNode(is_container=True)
+                    .entry('baz', 'test')
+                    .entry('baz_list', ['test'])
+            ).finalize()
+
+        self.assertEqual(
+            str(x),
+            "foo: (int) 1\n"
+            "bar:\n"
+            "  baz: (str) test\n"
+            "  baz_list: ([str]) ['test']\n"
+        )

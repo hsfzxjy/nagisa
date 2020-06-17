@@ -236,16 +236,19 @@ class SchemeNode:
     def to_str(self, level=0, indent_size=2):
         if not self.__meta.is_container:
             return '({}) {}'.format(
-                _stringify_type(self.__meta.type), 
+                stringify_type(self.__meta.type), 
                 self.__value
             )
 
-        retstr = ' ' * (level * indent_size)
+        indent = ' ' * (level * indent_size)
+        retstr = ''
         for key, entry in sorted(self.__entries.items(), key=lambda x: x[1].__meta.is_container):
-            retstr += '{}: '.format(key)
+            retstr += '{}{}:'.format(indent, key)
+            content = entry.to_str(level + 1, indent_size)
             if entry.__meta.is_container:
-                retstr += '\n'
-            retstr += '{}\n'.format(entry.to_str(level + 1, indent_size))
+                retstr += '\n{}'.format(content)
+            else:
+                retstr += ' {}\n'.format(content)
         for src, target in sorted(self.__alias_entries.items(), key=lambda x: x[0]):
             retstr += '{} -> {}\n'.format(src, target)
 

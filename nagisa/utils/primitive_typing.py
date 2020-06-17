@@ -71,7 +71,7 @@ def stringify_type(T) -> str:
     if not _is_list(T):
         return T.__name__
 
-    return str(T)
+    return '[{}]'.format(stringify_type(_base_type(T)))
 
 def regularize_type(T):
     if isinstance(T, list):
