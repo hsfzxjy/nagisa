@@ -1,4 +1,5 @@
 import weakref
+import inspect
 import collections
 from typing import List, Any
 from nagisa.utils.primitive_typing import *
@@ -260,3 +261,86 @@ class SchemeNode:
 
     def __str__(self):
         return self.to_str(level=0)
+
+    @classmethod
+    def from_class(cls, template):
+        return _class_to_scheme(cls, template)
+
+    @staticmethod
+    def writable(klass):
+        klass.__writable__ = True        
+        return klass
+
+class _class_to_scheme:
+
+    def __init__(self, scheme_class, template):
+        self.scheme_class = scheme_class
+        self.template = template
+
+    def __call__(self):
+        return self._parse(self.scheme_class, self.template)
+
+    def _parse(self, scheme_class, template):
+        return self._constructor_scheme_node(scheme_class, template)
+
+    def _constructor_scheme_node(self, scheme_class, template):
+        entries = collections.defaultdict(dict)
+        alias_entries = {}
+
+        if getattr(template, '__writable__', False):
+            attributes = ['writable']
+        else:
+            attributes = []
+        node = scheme_class(is_container=True, attributes=attributes)
+
+        for name, default in self._get_entryname_default_pairs(template):
+            if inspect.isclass(default):
+                default = self._constructor_scheme_node(scheme_class, default)
+                entries[name]['is_container'] = True
+
+            entries[name]['default'] = default
+
+        for name, annotation in getattr(template, '__annotations__', {}).items():
+            T, attributes, alias = self._parse_annotation(annotation)
+
+            if alias is not None:
+                alias_entries[name] = alias
+            else:
+                entries[name]['type_'] = T
+                entries[name]['attributes'] = attributes
+
+        for name, kwargs in entries.items():
+            child_node = kwargs['default'] if kwargs.get('is_container') else scheme_class(**kwargs)
+            node.entry(name, child_node)
+        for name, alias in alias_entries.items():
+            node.alias(name, alias)
+
+        return node
+
+    def _get_entryname_default_pairs(self, template):
+        return [
+            (name, value)
+            for name, value in inspect.getmembers(template)
+            if not name.startswith('__')
+        ]
+
+    def _parse_annotation(self, annotations):
+        if isinstance(annotations, str):
+            return None, None, annotations
+        elif is_acceptable_type(annotations):
+            return annotations, None, None
+        elif isinstance(annotations, list):
+            assert(len(annotations) > 0)
+        else:
+            raise TypeError(
+                'Annotations `{!r}` cannot be parsed.'.format(annotations)
+            )
+
+        T = None
+        if is_acceptable_type(annotations[0]):
+            T = annotations[0]
+            attributes = annotations[1:]
+        else:
+            attributes = annotations[:]
+
+        return T, attributes, None

@@ -24,7 +24,16 @@ def _is_list(T):
     return T is list or typing.get_origin(T) is list
 
 def is_acceptable_type(T):
-    return T in _ACCEPTED_TYPES
+    try:
+        T = regularize_type(T)
+    except AssertionError: # TODO
+        pass
+    
+    try:
+        return T in _ACCEPTED_TYPES
+    except TypeError:
+        # `T` may be unhashable
+        return False
 
 def compatible_with(T1, T2) -> bool:
 

@@ -253,3 +253,67 @@ class TestVerbose(unittest.TestCase):
             "  baz: (str) test\n"
             "  baz_list: ([str]) ['test']\n"
         )
+
+class TestDeclaritveConstructor(unittest.TestCase):
+
+    def test_from_class(self):
+        @scheme.SchemeNode.from_class
+        class Config:
+            foo: [str]
+
+            class bar:
+                baz: ['writable'] = 1.
+
+        x = Config().finalize()
+        x.bar.baz = 3.14
+        self.assertEqual(
+            str(x),
+            "foo: ([str]) []\n"
+            "bar:\n"
+            "  baz: (float) 3.14\n"
+        )
+
+    def test_from_class_writable_container(self):
+        @scheme.SchemeNode.from_class
+        class Config:
+            foo: [str]
+
+            @scheme.SchemeNode.writable
+            class bar:
+                pass
+
+        x = Config().finalize()
+        x.bar.baz = 3.14
+        self.assertEqual(
+            str(x),
+            "foo: ([str]) []\n"
+            "bar:\n"
+            "  baz: (float) 3.14\n"
+        )
+
+    def test_from_class_alias(self):
+        @scheme.SchemeNode.from_class
+        class Config:
+            foo: int
+            bar: 'foo'
+
+        x = Config().finalize()
+        self.assertEqual(
+            str(x),
+            "foo: (int) 0\n"
+            "bar -> foo\n"
+        )
+        self.assertEqual(x.bar, 0)
+
+    def test_from_class_type_attributes(self):
+        @scheme.SchemeNode.from_class
+        class Config:
+            foo: [float, 'writable'] = 9
+
+        x = Config().finalize()
+        x.foo = 3.14
+        self.assertEqual(
+            str(x),
+            "foo: (float) 3.14\n"
+        )
+
