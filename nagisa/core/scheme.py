@@ -4,9 +4,10 @@ import collections
 from typing import List, Any
 from nagisa.utils.primitive_typing import *
 
+
 class NodeMeta:
 
-    __slots__ = ['attributes', 'type', 'is_container', 'is_alias']
+    __slots__ = ["attributes", "type", "is_container", "is_alias"]
 
     def __init__(self, type_=None, attributes=None, is_container=False, is_alias=False):
         self.type = type_
@@ -17,12 +18,22 @@ class NodeMeta:
     def is_valid(self):
         return True
 
+
 class _AttributeSlots:
     pass
 
+
 class SchemeNode:
 
-    __slots__ = ['__meta', '__value', '__alias_entries', '__entries', '__finalized', '__parent', '__weakref__']
+    __slots__ = [
+        "__meta",
+        "__value",
+        "__alias_entries",
+        "__entries",
+        "__finalized",
+        "__parent",
+        "__weakref__",
+    ]
 
     @classmethod
     def new_from_primitive(cls, value: Any, parent=None, attributes=None):
@@ -32,22 +43,21 @@ class SchemeNode:
             return value
 
         if isinstance(value, dict):
-            result = cls(
-                attributes=attributes,
-                is_container=True,
-                parent=parent
-            )
+            result = cls(attributes=attributes, is_container=True, parent=parent)
             for k, v in value.items():
                 result.entry(k, cls.new_from_primitive(v, parent, attributes))
         else:
             result = cls(default=value, parent=parent, attributes=attributes)
-            
+
         return result
 
-    def __init__(self, parent=None, default=None, type_=None, attributes=None, is_container=False):
+    def __init__(
+        self, parent=None, default=None, type_=None, attributes=None, is_container=False
+    ):
         if not is_container:
-            assert default is not None or type_ is not None, \
-                "At least one of `type_` or `default` should be provided."
+            assert (
+                default is not None or type_ is not None
+            ), "At least one of `type_` or `default` should be provided."
 
             type_ = regularize_type(type_)
             if default is None:
@@ -56,13 +66,15 @@ class SchemeNode:
                 final_type = infer_type(default)
             else:
                 inferred_type = infer_type(default)
-                assert compatible_with(inferred_type, type_), \
-                    "Type of `{!r}` is `{!r}`, which could not match with `type_` {!r}.".format(
-                        default, inferred_type, type_
-                    )
+                assert compatible_with(
+                    inferred_type, type_
+                ), "Type of `{!r}` is `{!r}`, which could not match with `type_` {!r}.".format(
+                    default, inferred_type, type_
+                )
                 final_type = type_
-            assert is_acceptable_type(final_type), \
-                "Type {!r} is not acceptable.".format(final_type)
+            assert is_acceptable_type(
+                final_type
+            ), "Type {!r} is not acceptable.".format(final_type)
             if default is None:
                 default = get_default_value(final_type)
             self.__value = cast(default, final_type)
@@ -72,7 +84,9 @@ class SchemeNode:
             final_type = None
 
         attributes = self.__class__.__parse_attributes(attributes)
-        self.__meta = NodeMeta(type_=final_type, attributes=attributes, is_container=is_container)
+        self.__meta = NodeMeta(
+            type_=final_type, attributes=attributes, is_container=is_container
+        )
         self.__parent = weakref.ref(parent) if parent is not None else None
 
         self.__finalized = not is_container
@@ -89,7 +103,7 @@ class SchemeNode:
 
         ns.writable = False
         for attr_item in attributes:
-            if attr_item.lower() in ('w', 'writable'):
+            if attr_item.lower() in ("w", "writable"):
                 ns.writable = True
 
         cls._parse_attributes(ns, attributes)
@@ -100,8 +114,8 @@ class SchemeNode:
         pass
 
     def __update_value(self, value):
-        self.__check_finalized('update value', True)
-        self.__check_is_container('update value', False)
+        self.__check_finalized("update value", True)
+        self.__check_is_container("update value", False)
 
         if not self.__meta.attributes.writable:
             raise AttributeError("Cannot update a read-only node.")
@@ -110,16 +124,17 @@ class SchemeNode:
             raise TypeError(
                 "Cannot update `{!r}` node with value {!r}.".format(
                     self.__meta.type, value
-            ))
+                )
+            )
 
         self.__value = cast(value, self.__meta.type)
 
     def __getattr__(self, name):
-        if name == '__dict__':
+        if name == "__dict__":
             raise AttributeError
 
         if name not in set(self.__alias_entries) | set(self.__entries):
-            raise AttributeError("Attribute \"{}\" not found.".format(name))
+            raise AttributeError('Attribute "{}" not found.'.format(name))
 
         if name in self.__alias_entries:
             name = self.__alias_entries[name]
@@ -136,8 +151,8 @@ class SchemeNode:
             object.__setattr__(self, name, value)
             return
 
-        self.__check_finalized('update attribute', True)
-        self.__check_is_container('update attribute', True)
+        self.__check_finalized("update attribute", True)
+        self.__check_is_container("update attribute", True)
 
         if name in self.__alias_entries:
             name = self.__alias_entries[name]
@@ -155,11 +170,14 @@ class SchemeNode:
         if name in dir(self):
             raise RuntimeError('Cannot use preserved name "{}" as entry.'.format(name))
 
-        self.__entries[name] = self.new_from_primitive(node, parent=self, attributes=attributes)
+        self.__entries[name] = self.new_from_primitive(
+            node, parent=self, attributes=attributes
+        )
 
     def entry(self, name, node):
-        assert name not in self.__entries, \
-            "Entry name \"{}\" already exists.".format(name)
+        assert name not in self.__entries, 'Entry name "{}" already exists.'.format(
+            name
+        )
 
         self.__add_entry(name, node)
         return self
@@ -178,31 +196,37 @@ class SchemeNode:
 
     def __check_finalized(self, action: str, value: bool):
         if self.__finalized != value:
-            raise RuntimeError('Cannot {} {} the object is finalized.'.format(
-                action, 'before' if value else 'after'
-            ))
+            raise RuntimeError(
+                "Cannot {} {} the object is finalized.".format(
+                    action, "before" if value else "after"
+                )
+            )
 
     def __check_is_container(self, action: str, value: bool):
         if self.__meta.is_container != value:
-            raise RuntimeError('Cannot {} on {} node.'.format(
-                action, 'non-container' if value else 'container'
-            ))
+            raise RuntimeError(
+                "Cannot {} on {} node.".format(
+                    action, "non-container" if value else "container"
+                )
+            )
 
     def alias(self, name: str, target: str):
-        self.__check_finalized('create alias', False)
-        self.__check_is_container('create alias', True)
+        self.__check_finalized("create alias", False)
+        self.__check_is_container("create alias", True)
 
-        assert name.isidentifier(), \
-            "Alias name should be valid Python identifier, got \"{}\".".format(name)
-        assert target.isidentifier(), \
-            "Alias target should be valid Python identifier, got \"{}\".".format(target)
+        assert (
+            name.isidentifier()
+        ), 'Alias name should be valid Python identifier, got "{}".'.format(name)
+        assert (
+            target.isidentifier()
+        ), 'Alias target should be valid Python identifier, got "{}".'.format(target)
 
         self.__alias_entries[name] = target
         return self
-        
+
     def __get_meta_by_path(self, path: str):
         ptr = self
-        for part in path.split('.'):
+        for part in path.split("."):
             ptr = getattr(ptr, part, None)
             if not isinstance(ptr, self.__class__):
                 return InvalidMeta()
@@ -213,10 +237,9 @@ class SchemeNode:
             return
 
         duplicated = set(self.__alias_entries) & set(self.__entries)
-        assert not duplicated, \
-            "Aliases {} duplicated with existing entries.".format(
-                ', '.join('"{}"'.format(x) for x in duplicated)
-            )
+        assert not duplicated, "Aliases {} duplicated with existing entries.".format(
+            ", ".join('"{}"'.format(x) for x in duplicated)
+        )
 
         for name, target in self.__alias_entries.items():
             visited = [name, target]
@@ -224,38 +247,33 @@ class SchemeNode:
             while ptr not in self.__entries:
                 if ptr not in self.__alias_entries:
                     raise RuntimeError(
-                        "Broken alias {} (not an entry).".format(
-                            ' -> '.join(visited)
-                        )
+                        "Broken alias {} (not an entry).".format(" -> ".join(visited))
                     )
                 ptr = self.__alias_entries[ptr]
                 if ptr in visited:
                     raise RuntimeError(
-                        "Cyclic alias {}.".format(
-                            ' -> '.join(visited + [ptr])
-                        )
+                        "Cyclic alias {}.".format(" -> ".join(visited + [ptr]))
                     )
                 visited.append(ptr)
             self.__alias_entries[name] = ptr
 
     def to_str(self, level=0, indent_size=2):
         if not self.__meta.is_container:
-            return '({}) {}'.format(
-                stringify_type(self.__meta.type), 
-                self.__value
-            )
+            return "({}) {}".format(stringify_type(self.__meta.type), self.__value)
 
-        indent = ' ' * (level * indent_size)
-        retstr = ''
-        for key, entry in sorted(self.__entries.items(), key=lambda x: x[1].__meta.is_container):
-            retstr += '{}{}:'.format(indent, key)
+        indent = " " * (level * indent_size)
+        retstr = ""
+        for key, entry in sorted(
+            self.__entries.items(), key=lambda x: x[1].__meta.is_container
+        ):
+            retstr += "{}{}:".format(indent, key)
             content = entry.to_str(level + 1, indent_size)
             if entry.__meta.is_container:
-                retstr += '\n{}'.format(content)
+                retstr += "\n{}".format(content)
             else:
-                retstr += ' {}\n'.format(content)
+                retstr += " {}\n".format(content)
         for src, target in sorted(self.__alias_entries.items(), key=lambda x: x[0]):
-            retstr += '{} -> {}\n'.format(src, target)
+            retstr += "{} -> {}\n".format(src, target)
 
         return retstr
 
@@ -268,11 +286,11 @@ class SchemeNode:
 
     @staticmethod
     def writable(klass):
-        klass.__writable__ = True        
+        klass.__writable__ = True
         return klass
 
-class _class_to_scheme:
 
+class _class_to_scheme:
     def __init__(self, scheme_class, template):
         self.scheme_class = scheme_class
         self.template = template
@@ -287,8 +305,8 @@ class _class_to_scheme:
         entries = collections.defaultdict(dict)
         alias_entries = {}
 
-        if getattr(template, '__writable__', False):
-            attributes = ['writable']
+        if getattr(template, "__writable__", False):
+            attributes = ["writable"]
         else:
             attributes = []
         node = scheme_class(is_container=True, attributes=attributes)
@@ -296,21 +314,25 @@ class _class_to_scheme:
         for name, default in self._get_entryname_default_pairs(template):
             if inspect.isclass(default):
                 default = self._constructor_scheme_node(scheme_class, default)
-                entries[name]['is_container'] = True
+                entries[name]["is_container"] = True
 
-            entries[name]['default'] = default
+            entries[name]["default"] = default
 
-        for name, annotation in getattr(template, '__annotations__', {}).items():
+        for name, annotation in getattr(template, "__annotations__", {}).items():
             T, attributes, alias = self._parse_annotation(annotation)
 
             if alias is not None:
                 alias_entries[name] = alias
             else:
-                entries[name]['type_'] = T
-                entries[name]['attributes'] = attributes
+                entries[name]["type_"] = T
+                entries[name]["attributes"] = attributes
 
         for name, kwargs in entries.items():
-            child_node = kwargs['default'] if kwargs.get('is_container') else scheme_class(**kwargs)
+            child_node = (
+                kwargs["default"]
+                if kwargs.get("is_container")
+                else scheme_class(**kwargs)
+            )
             node.entry(name, child_node)
         for name, alias in alias_entries.items():
             node.alias(name, alias)
@@ -321,7 +343,7 @@ class _class_to_scheme:
         return [
             (name, value)
             for name, value in inspect.getmembers(template)
-            if not name.startswith('__')
+            if not name.startswith("__")
         ]
 
     def _parse_annotation(self, annotations):
@@ -330,11 +352,9 @@ class _class_to_scheme:
         elif is_acceptable_type(annotations):
             return annotations, None, None
         elif isinstance(annotations, list):
-            assert(len(annotations) > 0)
+            assert len(annotations) > 0
         else:
-            raise TypeError(
-                'Annotations `{!r}` cannot be parsed.'.format(annotations)
-            )
+            raise TypeError("Annotations `{!r}` cannot be parsed.".format(annotations))
 
         T = None
         if is_acceptable_type(annotations[0]):
