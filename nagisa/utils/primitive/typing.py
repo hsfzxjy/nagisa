@@ -1,13 +1,13 @@
+import sys
 import ast
 import typing
 from typing import List, Tuple, Optional
 
-try:
-    # python >= 3.7
-    _generic_alias_base = typing._GenericAlias
-except AttributeError:
-    # python <= 3.6
+if sys.version_info >= (3, 7, 0):
+    _generic_alias_base = _optional_base = typing._GenericAlias
+else:
     _generic_alias_base = typing.GenericMeta
+    _optional_base = typing._Union
 
 from collections import namedtuple
 from nagisa.utils.primitive.malformed import Malformed
@@ -32,13 +32,13 @@ NoneType = type(None)
 
 
 def _elem(T):
-    while isinstance(T, _generic_alias_base):
+    while isinstance(T, (_generic_alias_base, _optional_base)):
         T = _unwrap(T)
     return T
 
 
 def _unwrap(T):
-    if isinstance(T, _generic_alias_base):
+    if isinstance(T, (_generic_alias_base, _optional_base)):
         L = len(T.__args__)
         if L == 1:
             return T.__args__[0]
@@ -48,8 +48,9 @@ def _unwrap(T):
 
 
 def _is_nullable(T) -> bool:
+
     return (
-        isinstance(T, _generic_alias_base)
+        isinstance(T, (_optional_base))
         and T.__origin__ is typing.Union
         and len(T.__args__) == 2
         and type(None) in T.__args__
