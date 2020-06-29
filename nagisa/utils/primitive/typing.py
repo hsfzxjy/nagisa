@@ -1,4 +1,6 @@
+import ast
 import typing
+from typing import List, Tuple, Optional
 
 try:
     # python >= 3.7
@@ -7,8 +9,8 @@ except AttributeError:
     # python <= 3.6
     _generic_alias_base = typing.GenericMeta
 
-from typing import List, Tuple, Any
 from collections import namedtuple
+from nagisa.utils.primitive.malformed import Malformed
 
 __all__ = [
     "is_acceptable_type",
@@ -19,23 +21,49 @@ __all__ = [
     "stringify_type",
     "regularize_type",
     "cast",
+    "str_to_object",
 ]
 
 _PRIMITIVE_TYPES = (int, float, bool, str)
-_ACCEPTED_TYPES = frozenset([*_PRIMITIVE_TYPES, *(List[x] for x in _PRIMITIVE_TYPES),])
+_ACCEPTED_TYPES = frozenset([*_PRIMITIVE_TYPES, *(List[T] for T in _PRIMITIVE_TYPES),])
+_ACCEPTED_TYPES = _ACCEPTED_TYPES | frozenset([Optional[T] for T in _ACCEPTED_TYPES])
+
+NoneType = type(None)
 
 
-def _base_type(T):
-    if _is_list(T):
-        return T.__args__[0]
-    else:
-        return T
+def _elem(T):
+    while isinstance(T, _generic_alias_base):
+        T = _unwrap(T)
+    return T
+
+
+def _unwrap(T):
+    if isinstance(T, _generic_alias_base):
+        L = len(T.__args__)
+        if L == 1:
+            return T.__args__[0]
+        elif L == 2:
+            return T.__args__[0 if T.__args__[1] is NoneType else 1]
+    return T
+
+
+def _is_nullable(T) -> bool:
+    return (
+        isinstance(T, _generic_alias_base)
+        and T.__origin__ is typing.Union
+        and len(T.__args__) == 2
+        and type(None) in T.__args__
+    )
 
 
 def _is_list(T) -> bool:
-    return T in (List, list, Tuple, tuple) or (
-        isinstance(T, _generic_alias_base)
-        and T.__origin__ in (List, list, Tuple, tuple)
+    return (
+        T in (List, list, Tuple, tuple)
+        or (_is_nullable(T) and _is_list(_unwrap(T)))
+        or (
+            isinstance(T, _generic_alias_base)
+            and T.__origin__ in (List, list, Tuple, tuple)
+        )
     )
 
 
@@ -60,14 +88,19 @@ def compatible_with(T1, T2) -> bool:
     if T1 is int and T2 is float:
         return True
 
-    if _is_list(T1) and _is_list(T2):
-        return compatible_with(_base_type(T1), _base_type(T2))
+    if _is_nullable(T2):
+        return T1 is NoneType or compatible_with(T1, _unwrap(T2))
 
     return False
 
 
 def get_default_value(T):
-    return [] if _is_list(T) else T()
+    if _is_nullable(T):
+        return None
+    elif _is_list(T):
+        return []
+    else:
+        return T()
 
 
 def infer_type(value, allow_empty_list=False):
@@ -96,35 +129,58 @@ def infer_type(value, allow_empty_list=False):
 
 
 def check_type(value, T) -> bool:
-    if _is_list(T) and _is_list(infer_type(value, allow_empty_list=True)) and not value:
+    if _is_nullable(T) and value is None:
+        return True
+    if _is_list(T) and (value == [] or value == ()):
         return True
 
     return compatible_with(infer_type(value, allow_empty_list=True), T)
 
 
 def stringify_type(T) -> str:
-    if not _is_list(T):
-        return T.__name__
 
-    return "[{}]".format(stringify_type(_base_type(T)))
+    suffix = ""
+    if _is_nullable(T):
+        T = _unwrap(T)
+        suffix = "?"
+
+    if not _is_list(T):
+        return T.__name__ + suffix
+
+    return "[{}]".format(stringify_type(_elem(T))) + suffix
 
 
 def regularize_type(T):
-    if isinstance(T, list):
-        assert len(T) == 1, "Bad type {!r}.".format(T)
+    if isinstance(T, list) and len(T) == 1 and T[0] in _ACCEPTED_TYPES:
         return List[T[0]]
 
     return T
 
 
 def cast(value, T):
+    if value is Malformed:
+        return value
+
     if not check_type(value, T):
         raise TypeError("Cannot cast {!r} into {!r}.".format(value, T))
+
+    if value is None:
+        return value
+
+    if _is_nullable(T):
+        T = _unwrap(T)
 
     if _is_list(T):
         if not value:
             return []
-        base_type = _base_type(T)
+        base_type = _elem(T)
         return [base_type(x) for x in value]
 
     return T(value)
+
+
+def str_to_object(string, *, default=Malformed):
+    try:
+        return ast.literal_eval(string)
+    except (SyntaxError, ValueError):
+        return default

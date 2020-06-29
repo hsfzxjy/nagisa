@@ -2,7 +2,7 @@ import weakref
 import inspect
 import collections
 from typing import List, Any
-from nagisa.utils.primitive_typing import *
+from nagisa.utils.primitive.typing import *
 
 
 class NodeMeta:
@@ -26,12 +26,12 @@ class _AttributeSlots:
 class SchemeNode:
 
     __slots__ = [
-        "__meta",
-        "__value",
-        "__alias_entries",
-        "__entries",
-        "__finalized",
-        "__parent",
+        "_meta",
+        "_value",
+        "_alias_entries",
+        "_entries",
+        "_finalized",
+        "_parent",
         "__weakref__",
     ]
 
@@ -39,7 +39,7 @@ class SchemeNode:
     def new_from_primitive(cls, value: Any, parent=None, attributes=None):
 
         if isinstance(value, cls):
-            value.__parent = parent
+            value._parent = parent
             return value
 
         if isinstance(value, dict):
@@ -77,19 +77,19 @@ class SchemeNode:
             ), "Type {!r} is not acceptable.".format(final_type)
             if default is None:
                 default = get_default_value(final_type)
-            self.__value = cast(default, final_type)
+            self._value = cast(default, final_type)
         else:
-            self.__alias_entries = dict()
-            self.__entries = dict()
+            self._alias_entries = dict()
+            self._entries = dict()
             final_type = None
 
         attributes = self.__class__.__parse_attributes(attributes)
-        self.__meta = NodeMeta(
+        self._meta = NodeMeta(
             type_=final_type, attributes=attributes, is_container=is_container
         )
-        self.__parent = weakref.ref(parent) if parent is not None else None
+        self._parent = weakref.ref(parent) if parent is not None else None
 
-        self.__finalized = not is_container
+        self._finalized = False
 
     @classmethod
     def __parse_attributes(cls, attributes):
@@ -113,89 +113,92 @@ class SchemeNode:
     def _parse_attributes(cls, ns, attributes):
         pass
 
-    def __update_value(self, value):
-        self.__check_finalized("update value", True)
-        self.__check_is_container("update value", False)
+    def _update_value(self, value):
+        if self._finalized:
+            self.__check_is_container("update value", False)
 
-        if not self.__meta.attributes.writable:
-            raise AttributeError("Cannot update a read-only node.")
+            if not self._meta.attributes.writable:
+                raise AttributeError("Cannot update a read-only node.")
 
-        if not check_type(value, self.__meta.type):
+        if not check_type(value, self._meta.type):
             raise TypeError(
                 "Cannot update `{!r}` node with value {!r}.".format(
-                    self.__meta.type, value
+                    self._meta.type, value
                 )
             )
 
-        self.__value = cast(value, self.__meta.type)
+        self._value = cast(value, self._meta.type)
 
     def __getattr__(self, name):
         if name == "__dict__":
             raise AttributeError
 
-        if name not in set(self.__alias_entries) | set(self.__entries):
+        if name not in set(self._alias_entries) | set(self._entries):
             raise AttributeError('Attribute "{}" not found.'.format(name))
 
-        if name in self.__alias_entries:
-            name = self.__alias_entries[name]
+        if name in self._alias_entries:
+            name = self._alias_entries[name]
 
-        node = self.__entries[name]
-        if node.__meta.is_container:
+        node = self._entries[name]
+        if node._meta.is_container:
             return node
         else:
-            return node.__value
+            return node._value
 
     def __setattr__(self, name, value):
 
-        if any(name.endswith(x) for x in self.__class__.__slots__):
+        if any(name.endswith(x) for x in SchemeNode.__slots__):
             object.__setattr__(self, name, value)
             return
 
         self.__check_finalized("update attribute", True)
         self.__check_is_container("update attribute", True)
 
-        if name in self.__alias_entries:
-            name = self.__alias_entries[name]
+        if name in self._alias_entries:
+            name = self._alias_entries[name]
 
-        if name in self.__entries:
-            self.__entries[name].__update_value(value)
+        if name in self._entries:
+            self._entries[name]._update_value(value)
         else:
-            if not self.__meta.attributes.writable:
+            if not self._meta.attributes.writable:
                 raise RuntimeError("Cannot set attribute on read-only node.")
 
-            self.__add_entry(name, value, attributes="writable")
+            entry = self.__add_entry(name, value, attributes="writable")
+            if self._finalized:
+                entry.finalize()
 
-    def __add_entry(self, name, node, attributes=None):
+    def __add_entry(self, name, value, attributes=None):
 
         if name in dir(self):
             raise RuntimeError('Cannot use preserved name "{}" as entry.'.format(name))
 
-        self.__entries[name] = self.new_from_primitive(
-            node, parent=self, attributes=attributes
-        )
+        node = self.new_from_primitive(value, parent=self, attributes=attributes)
+        self._entries[name] = node
+        return node
 
     def entry(self, name, node):
-        assert name not in self.__entries, 'Entry name "{}" already exists.'.format(
-            name
-        )
+        assert name not in self._entries, 'Entry name "{}" already exists.'.format(name)
 
         self.__add_entry(name, node)
         return self
 
     def finalize(self):
-        if self.__finalized:
+        if not self._meta.is_container:
+            self._finalized = True
+            return self
+
+        if self._finalized:
             return self
 
         self.__verify_alias()
-        self.__finalized = True
-        for entry in self.__entries.values():
-            if entry.__meta.is_container:
-                entry.finalize()
+        self._finalized = True
+        for entry in self._entries.values():
+            entry.finalize()
 
         return self
 
     def __check_finalized(self, action: str, value: bool):
-        if self.__finalized != value:
+        if self._finalized != value:
             raise RuntimeError(
                 "Cannot {} {} the object is finalized.".format(
                     action, "before" if value else "after"
@@ -203,7 +206,7 @@ class SchemeNode:
             )
 
     def __check_is_container(self, action: str, value: bool):
-        if self.__meta.is_container != value:
+        if self._meta.is_container != value:
             raise RuntimeError(
                 "Cannot {} on {} node.".format(
                     action, "non-container" if value else "container"
@@ -221,7 +224,7 @@ class SchemeNode:
             target.isidentifier()
         ), 'Alias target should be valid Python identifier, got "{}".'.format(target)
 
-        self.__alias_entries[name] = target
+        self._alias_entries[name] = target
         return self
 
     def __get_meta_by_path(self, path: str):
@@ -230,49 +233,49 @@ class SchemeNode:
             ptr = getattr(ptr, part, None)
             if not isinstance(ptr, self.__class__):
                 return InvalidMeta()
-        return ptr.__meta
+        return ptr._meta
 
     def __verify_alias(self):
-        if not self.__meta.is_container:
+        if not self._meta.is_container:
             return
 
-        duplicated = set(self.__alias_entries) & set(self.__entries)
+        duplicated = set(self._alias_entries) & set(self._entries)
         assert not duplicated, "Aliases {} duplicated with existing entries.".format(
             ", ".join('"{}"'.format(x) for x in duplicated)
         )
 
-        for name, target in self.__alias_entries.items():
+        for name, target in self._alias_entries.items():
             visited = [name, target]
             ptr = target
-            while ptr not in self.__entries:
-                if ptr not in self.__alias_entries:
+            while ptr not in self._entries:
+                if ptr not in self._alias_entries:
                     raise RuntimeError(
                         "Broken alias {} (not an entry).".format(" -> ".join(visited))
                     )
-                ptr = self.__alias_entries[ptr]
+                ptr = self._alias_entries[ptr]
                 if ptr in visited:
                     raise RuntimeError(
                         "Cyclic alias {}.".format(" -> ".join(visited + [ptr]))
                     )
                 visited.append(ptr)
-            self.__alias_entries[name] = ptr
+            self._alias_entries[name] = ptr
 
     def to_str(self, level=0, indent_size=2):
-        if not self.__meta.is_container:
-            return "({}) {}".format(stringify_type(self.__meta.type), self.__value)
+        if not self._meta.is_container:
+            return "({}) {}".format(stringify_type(self._meta.type), self._value)
 
         indent = " " * (level * indent_size)
         retstr = ""
         for key, entry in sorted(
-            self.__entries.items(), key=lambda x: x[1].__meta.is_container
+            self._entries.items(), key=lambda x: x[1]._meta.is_container
         ):
             retstr += "{}{}:".format(indent, key)
             content = entry.to_str(level + 1, indent_size)
-            if entry.__meta.is_container:
+            if entry._meta.is_container:
                 retstr += "\n{}".format(content)
             else:
                 retstr += " {}\n".format(content)
-        for src, target in sorted(self.__alias_entries.items(), key=lambda x: x[0]):
+        for src, target in sorted(self._alias_entries.items(), key=lambda x: x[0]):
             retstr += "{} -> {}\n".format(src, target)
 
         return retstr
@@ -288,6 +291,26 @@ class SchemeNode:
     def writable(klass):
         klass.__writable__ = True
         return klass
+
+    def value_dict(self):
+        if not self._meta.is_container:
+            return self._value
+
+        dct = {}
+        for name, child_node in self._entries.items():
+            dct[name] = child_node.value_dict()
+
+        return dct
+
+    def type_dict(self):
+        if not self._meta.is_container:
+            return self._meta.type
+
+        dct = {}
+        for name, child_node in self._entries.items():
+            dct[name] = child_node.type_dict()
+
+        return dct
 
 
 class _class_to_scheme:
@@ -364,3 +387,4 @@ class _class_to_scheme:
             attributes = annotations[:]
 
         return T, attributes, None
+

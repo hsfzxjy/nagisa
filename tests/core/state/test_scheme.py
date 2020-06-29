@@ -1,5 +1,5 @@
 import unittest
-from nagisa.core import scheme
+from nagisa.core.state import scheme
 
 
 class TestInit(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestInit(unittest.TestCase):
 
         for value, T in cases:
             x = scheme.SchemeNode(type_=T)
-            self.assertEqual(x._SchemeNode__value, value)
+            self.assertEqual(x._value, value)
 
     def test_init_with_default(self):
         cases = [
@@ -39,7 +39,7 @@ class TestInit(unittest.TestCase):
         ]
         for value, T in cases:
             x = scheme.SchemeNode(default=value)
-            self.assertEqual(x._SchemeNode__meta.type, T)
+            self.assertEqual(x._meta.type, T)
 
     def test_init_with_default_and_type(self):
         cases = [
@@ -54,7 +54,7 @@ class TestInit(unittest.TestCase):
         ]
         for value, T in cases:
             x = scheme.SchemeNode(default=value, type_=T)
-            self.assertEqual(x._SchemeNode__meta.type, T)
+            self.assertEqual(x._meta.type, T)
 
         cases = [
             [[1, 2,], [int]],
@@ -228,7 +228,7 @@ class TestSetAttr(unittest.TestCase):
         self.assertEqual(x.foo.baz.boom, [12, 13])
         self.assertEqual(x.foo.baz.biu, "biu")
 
-    def test_set_attr_free_container(self):
+    def test_set_attr_free_container_fail(self):
         x = (
             scheme.SchemeNode(is_container=True)
             .entry("foo", scheme.SchemeNode(is_container=True, attributes="writable"))
@@ -313,4 +313,3 @@ class TestDeclaritveConstructor(unittest.TestCase):
         x = Config().finalize()
         x.foo = 3.14
         self.assertEqual(str(x), "foo: (float) 3.14\n")
-
