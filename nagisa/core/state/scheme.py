@@ -342,7 +342,7 @@ class _class_to_scheme:
         self.template = template
 
     def __repr__(self):
-        return f'<{self.scheme_class.__name__} Constructor>'
+        return f"<{self.scheme_class.__name__} Constructor>"
 
     def __call__(self):
         return self._parse(self.scheme_class, self.template)
