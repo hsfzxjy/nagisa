@@ -1,5 +1,7 @@
 import enum
 
+from nagisa.utils.patterns.registry import Registry
+
 
 class _Action(enum.Enum):
 
@@ -10,27 +12,15 @@ class _Action(enum.Enum):
     INVALID = enum.auto()
 
 
-class _register_action:
-    mapping = {}
-
-    def __init__(self, action_token):
-        self.action_token = action_token
-
-    def __call__(self, f):
-        self.mapping[self.action_token] = f
-        return f
-
-    @classmethod
-    def invoke(cls, action: _Action, *args, **kwargs):
-        cls.mapping[action](*args, **kwargs)
+_ModifierActionRegistry = Registry("ModifierAction")
 
 
-@_register_action(_Action.UPDATE)
+@_ModifierActionRegistry.register(_Action.UPDATE)
 def __update(directive, obj, name, value, attrsetter):
     attrsetter(obj, name, value)
 
 
-@_register_action(_Action.APPEND)
+@_ModifierActionRegistry.register(_Action.APPEND)
 def __append(directive, obj, name, value, attrsetter):
     target: list = getattr(obj, name, None)
     if not isinstance(target, list):
@@ -41,7 +31,7 @@ def __append(directive, obj, name, value, attrsetter):
     target.append(value)
 
 
-@_register_action(_Action.PREPEND)
+@_ModifierActionRegistry.register(_Action.PREPEND)
 def __prepend(directive, obj, name, value, attrsetter):
     target: list = getattr(obj, name, None)
     if not isinstance(target, list):
@@ -52,12 +42,12 @@ def __prepend(directive, obj, name, value, attrsetter):
     target.insert(0, value)
 
 
-@_register_action(_Action.NOTFOUND)
+@_ModifierActionRegistry.register(_Action.NOTFOUND)
 def __not_found(directive, obj, name, value, attrsetter):
     raise RuntimeError("`{}` not found.".format(directive))
 
 
-@_register_action(_Action.INVALID)
+@_ModifierActionRegistry.register(_Action.INVALID)
 def __invalid(directive, obj, name, value, attrsetter):
     raise RuntimeError("Invalid directive `{}`.".format(directive))
 
@@ -93,4 +83,4 @@ def modify(obj, directive: str, value, extended_syntax=True, attrsetter=setattr)
     except AttributeError:
         action = _Action.NOTFOUND
 
-    _register_action.invoke(action, directive, obj, name, value, attrsetter)
+    _ModifierActionRegistry[action](directive, obj, name, value, attrsetter)
