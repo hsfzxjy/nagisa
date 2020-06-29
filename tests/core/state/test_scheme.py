@@ -313,3 +313,13 @@ class TestDeclaritveConstructor(unittest.TestCase):
         x = Config().finalize()
         x.foo = 3.14
         self.assertEqual(str(x), "foo: (float) 3.14\n")
+
+
+class TestRepr(unittest.TestCase):
+    def test_repr(self):
+        @scheme.SchemeNode.from_class
+        class Config:
+            pass
+
+        self.assertEqual(str(Config), "<SchemeNode Constructor>")
+
