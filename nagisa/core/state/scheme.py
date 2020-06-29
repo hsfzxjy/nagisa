@@ -3,6 +3,7 @@ import inspect
 import collections
 from typing import List, Any
 from nagisa.utils.primitive.typing import *
+from nagisa.utils.patterns import modifier
 
 
 class NodeMeta:
@@ -311,6 +312,28 @@ class SchemeNode:
             dct[name] = child_node.type_dict()
 
         return dct
+
+    def _merge_from_directives(self, directives, ext_syntax=True):
+        def _attrsetter(obj: SchemeNode, key, value):
+            obj._entries[key]._update_value(value)
+
+        def _attrchecker(obj: SchemeNode, key):
+            return key in obj._entries
+
+        for directive, value in directives:
+            modifier.modify(
+                self, directive, value, ext_syntax, _attrsetter, _attrchecker
+            )
+
+        return self
+
+    def _walk(self, path, func):
+        if not self._meta.is_container:
+            func(path, self)
+            return
+
+        for key, entry in self._entries.items():
+            entry._walk(path + [key], func)
 
 
 class _class_to_scheme:

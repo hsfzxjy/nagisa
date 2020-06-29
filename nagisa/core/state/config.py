@@ -3,7 +3,6 @@ import argparse
 from nagisa.core.state.scheme import SchemeNode
 from nagisa.core.state import envvar
 from nagisa.utils.primitive.typing import cast, str_to_object, Malformed
-from nagisa.utils.primitive import modifier
 
 
 class ConfigNode(SchemeNode):
@@ -24,30 +23,43 @@ class ConfigNode(SchemeNode):
         ns.arg = arg_name
 
     def merge_from_args(self, ns):
-        for name, entry in self._entries.items():
-            if entry._meta.is_container:
-                entry.merge_from_args(ns)
-            elif entry._meta.attributes.arg is not None:
-                value = getattr(ns, entry._meta.attributes.arg, Malformed)
-                if value is not Malformed:
-                    entry._update_value(value)
+
+        directives = []
+
+        def _visitor(path, entry):
+            arg_name = entry._meta.attributes.arg
+            if arg_name is None or not hasattr(ns, arg_name):
+                return
+            directives.append((".".join(path), getattr(ns, arg_name)))
+
+        self._walk([], _visitor)
+        self._merge_from_directives(directives, ext_syntax=False)
+
         return self
 
     def merge_from_envvar(self):
-        for name, entry in self._entries.items():
-            if entry._meta.is_container:
-                entry.merge_from_envvar()
-            elif entry._meta.attributes.env is not None:
-                value = envvar.object_from_envvar(
-                    entry._meta.attributes.env, entry._meta.type
+
+        directives = []
+
+        def _visitor(path, entry):
+            env_name = entry._meta.attributes.env
+            if env_name is None or env_name not in envvar.os.environ:
+                return
+            directives.append(
+                (
+                    ".".join(path),
+                    envvar.object_from_envvar(
+                        entry._meta.attributes.env, entry._meta.type
+                    ),
                 )
-                if value is not None:
-                    entry._update_value(value)
+            )
+
+        self._walk([], _visitor)
+        self._merge_from_directives(directives, ext_syntax=False)
+
         return self
 
-    def merge_from_remainder(
-        self, remainder, ignore_errors=False, extended_syntax=True
-    ):
+    def merge_from_remainder(self, remainder, ignore_errors=False, ext_syntax=True):
         if not isinstance(remainder, list):
             raise TypeError(
                 "Expect `remainder` to be a list, got {!r}.".format(type(remainder))
@@ -55,16 +67,13 @@ class ConfigNode(SchemeNode):
         if len(remainder) % 2 != 0:
             raise ValueError("Expect `remainder` to have odd number of elements.")
 
-        attrsetter = lambda s, n, v: s._entries[n]._update_value(v)
-        for directive, value in zip(remainder[::2], remainder[1::2]):
-            value = str_to_object(value, default=value)
-            try:
-                modifier.modify(
-                    self, directive, value, extended_syntax, attrsetter,
-                )
-            except Exception as e:
-                if not ignore_errors:
-                    raise
+        self._merge_from_directives(
+            zip(
+                remainder[::2],
+                map(lambda v: str_to_object(v, default=v), remainder[1::2]),
+            ),
+            ext_syntax,
+        )
 
         return self
 
