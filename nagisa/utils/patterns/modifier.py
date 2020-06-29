@@ -52,22 +52,24 @@ def __invalid(directive, obj, name, value, attrsetter):
     raise RuntimeError("Invalid directive `{}`.".format(directive))
 
 
-def _resolve_path(obj, dotted_path: str):
+def _resolve_path(obj, dotted_path: str, attrchecker):
     host = obj
     components = dotted_path.split(".")
     for component in components[:-1]:
         if not component.isidentifier():
             raise NameError
-        if not hasattr(host, component):
+        if not attrchecker(host, component):
             raise AttributeError
         host = getattr(host, component)
     return host, components[-1]
 
 
-def modify(obj, directive: str, value, extended_syntax=True, attrsetter=setattr):
+def modify(
+    obj, directive: str, value, ext_syntax=True, attrsetter=setattr, attrchecker=hasattr
+):
     action = _Action.UPDATE
     dotted_path = directive
-    if extended_syntax:
+    if ext_syntax:
         if directive.startswith("+"):
             action = _Action.PREPEND
             dotted_path = directive[1:]
@@ -77,7 +79,7 @@ def modify(obj, directive: str, value, extended_syntax=True, attrsetter=setattr)
 
     name = None
     try:
-        obj, name = _resolve_path(obj, dotted_path)
+        obj, name = _resolve_path(obj, dotted_path, attrchecker)
     except NameError:
         action = _Action.INVALID
     except AttributeError:
