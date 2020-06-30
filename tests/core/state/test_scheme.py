@@ -323,3 +323,54 @@ class TestRepr(unittest.TestCase):
 
         self.assertEqual(str(Config), "<SchemeNode Constructor>")
 
+
+class TestMerge(unittest.TestCase):
+    @scheme.SchemeNode.from_class
+    class Config:
+        foo_1: int
+        foo_2: [str]
+
+        class sub:
+            foo_3: bool
+            foo_4: [float]
+
+    def test_merge_from_dict(self):
+        dct = {"foo_1": 42, "foo_2": ["bar"], "sub": {"foo_3": True, "foo_4": [123]}}
+        cfg = self.Config().merge_from_dict(dct).finalize()
+
+        self.assertEqual(cfg.value_dict(), dct)
+
+    def test_merge_from_dict_attributeerror(self):
+        dct = {"foo_1": 42, "foo_2": ["bar"], "sub": {"foo_3": True, "foo_5": [123]}}
+
+        with self.assertRaises(AttributeError) as cm:
+            cfg = self.Config().merge_from_dict(dct).finalize()
+        self.assertEqual(str(cm.exception), "Key 'foo_5' is not an entry.")
+
+    def test_merge_from_dict_typeerror(self):
+        dct = {"foo_1": 42, "foo_2": ["bar"], "sub": 123}
+
+        with self.assertRaises(TypeError) as cm:
+            cfg = self.Config().merge_from_dict(dct).finalize()
+        self.assertEqual(
+            str(cm.exception),
+            "Expect value to be a dict for container entry 'sub', got <class 'int'>.",
+        )
+
+    def test_load_from_file(self):
+        cfg = self.Config().merge_from_file("yaml_example/a/b/c.yaml").finalize()
+        self.assertEqual(
+            cfg.value_dict(),
+            {"sub": {"foo_3": False, "foo_4": [12.0]}, "foo_1": 12, "foo_2": ["bar"]},
+        )
+
+        cfg = self.Config().merge_from_file("yaml_example/a.yaml").finalize()
+        self.assertEqual(
+            cfg.value_dict(),
+            {"sub": {"foo_3": False, "foo_4": [42.0]}, "foo_1": 0, "foo_2": []},
+        )
+
+    def test_load_from_file_typeerror(self):
+        with self.assertRaises(TypeError):
+            cfg = self.Config().merge_from_file("yaml_example/a/b.yaml").finalize()
+

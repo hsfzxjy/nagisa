@@ -1,0 +1,5 @@
+_BASE_: "../a.yaml"
+foo_1: 13.
+foo_2: ["bar"]
+sub:
+  foo_4: [12]

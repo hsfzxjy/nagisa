@@ -1,0 +1,4 @@
+_BASE_: "../b.yaml"
+foo_1: 12
+sub:
+  foo_3: False

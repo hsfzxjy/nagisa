@@ -4,6 +4,7 @@ import collections
 from typing import List, Any
 from nagisa.utils.primitive.typing import *
 from nagisa.utils.patterns import modifier
+from nagisa.utils.data_handling.yaml import load_yaml_with_base
 
 
 class NodeMeta:
@@ -312,6 +313,28 @@ class SchemeNode:
             dct[name] = child_node.type_dict()
 
         return dct
+
+    def merge_from_dict(self, dct):
+        for key, value in dct.items():
+            if key not in self._entries:
+                raise AttributeError(f"Key {key!r} is not an entry.")
+
+            entry = self._entries[key]
+            if entry._meta.is_container:
+                if not isinstance(value, dict):
+                    raise TypeError(
+                        f"Expect value to be a dict for container entry {key!r}, got {type(value)!r}."
+                    )
+                entry.merge_from_dict(value)
+            else:
+                entry._update_value(value)
+
+        return self
+
+    def merge_from_file(self, filename: str):
+        dct = load_yaml_with_base(filename, caller_level=-4)
+        self.merge_from_dict(dct)
+        return self
 
     def _merge_from_directives(self, directives, ext_syntax=True):
         def _attrsetter(obj: SchemeNode, key, value):
