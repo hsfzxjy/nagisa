@@ -92,6 +92,9 @@ def compatible_with(T1, T2) -> bool:
     if _is_nullable(T2):
         return T1 is NoneType or compatible_with(T1, _unwrap(T2))
 
+    if _is_list(T1) and _is_list(T2):
+        return compatible_with(_elem(T1), _elem(T2))
+
     return False
 
 
