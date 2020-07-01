@@ -235,15 +235,53 @@ class TestSetAttr(unittest.TestCase):
             .finalize()
         )
 
-        with self.assertRaises(RuntimeError):
-            x.foo = {"bar": 1}
-
         x.foo.bar = 1
         with self.assertRaises(TypeError):
             x.foo.bar += 1.2
 
         with self.assertRaises(TypeError):
             x.foo.bar = {"baz": 1}
+
+    def test_set_attr_free_container_dict(self):
+        x = (
+            scheme.SchemeNode(is_container=True)
+            .entry("foo", scheme.SchemeNode(is_container=True, attributes="w"))
+            .finalize()
+        )
+
+        x.foo = {"bar": 1}
+        self.assertEqual(x.value_dict(), {"foo": {"bar": 1}})
+        x.foo = {"baz": 2}
+        self.assertEqual(x.value_dict(), {"foo": {"baz": 2}})
+
+        with self.assertRaises(TypeError) as cm:
+            x.foo = 1
+        self.assertEqual(
+            str(cm.exception),
+            "Expect value to be a dict for container entry 'foo', got <class 'int'>.",
+        )
+
+    def test_set_attr_container_dict_fail(self):
+        x = (
+            scheme.SchemeNode(is_container=True)
+            .entry("foo", scheme.SchemeNode(is_container=True))
+            .finalize()
+        )
+
+        with self.assertRaises(AttributeError) as cm:
+            x.foo = {"bar": 1}
+            self.assertEqual(
+                str(cm.exception), "Cannot update a read-only entry 'foo'."
+            )
+
+    def test_set_attr_before_finalized(self):
+        x = scheme.SchemeNode(is_container=True).entry("foo", 1)
+        with self.assertRaises(RuntimeError) as cm:
+            x.foo = 2
+        self.assertEqual(
+            str(cm.exception),
+            "Cannot update attribute before the object is finalized.",
+        )
 
 
 class TestVerbose(unittest.TestCase):
@@ -345,7 +383,10 @@ class TestMerge(unittest.TestCase):
 
         with self.assertRaises(AttributeError) as cm:
             cfg = self.Config().merge_from_dict(dct).finalize()
-        self.assertEqual(str(cm.exception), "Key 'foo_5' is not an entry.")
+        self.assertEqual(
+            str(cm.exception),
+            "Adding extra entries 'foo_5' to read-only container 'sub' is forbidden.",
+        )
 
     def test_merge_from_dict_typeerror(self):
         dct = {"foo_1": 42, "foo_2": ["bar"], "sub": 123}
@@ -356,6 +397,16 @@ class TestMerge(unittest.TestCase):
             str(cm.exception),
             "Expect value to be a dict for container entry 'sub', got <class 'int'>.",
         )
+
+    def test_merge_from_dict_writable_container(self):
+        @scheme.SchemeNode.from_class
+        class Config:
+            @scheme.SchemeNode.writable
+            class sub:
+                pass
+
+        cfg = Config().merge_from_dict({"sub": {"foo": "bar"}}).finalize()
+        self.assertEqual(cfg.value_dict(), {"sub": {"foo": "bar"}})
 
     def test_load_from_file(self):
         cfg = self.Config().merge_from_file("yaml_example/a/b/c.yaml").finalize()
@@ -373,4 +424,3 @@ class TestMerge(unittest.TestCase):
     def test_load_from_file_typeerror(self):
         with self.assertRaises(TypeError):
             cfg = self.Config().merge_from_file("yaml_example/a/b.yaml").finalize()
-

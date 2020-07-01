@@ -41,7 +41,8 @@ class SchemeNode:
     def new_from_primitive(cls, value: Any, parent=None, attributes=None):
 
         if isinstance(value, cls):
-            value._parent = parent
+            if parent is not None:
+                value._parent = weakref.ref(parent)
             return value
 
         if isinstance(value, dict):
@@ -115,21 +116,77 @@ class SchemeNode:
     def _parse_attributes(cls, ns, attributes):
         pass
 
-    def _update_value(self, value):
-        if self._finalized:
-            self.__check_is_container("update value", False)
+    def dotted_path(self):
+        entry = self
+        paths = []
+        while True:
+            parent = entry._parent() if entry._parent is not None else None
+            if parent is None:
+                break
+            for k, v in parent._entries.items():
+                if v is entry:
+                    paths.append(k)
+                    break
+            entry = parent
 
-            if not self._meta.attributes.writable:
-                raise AttributeError("Cannot update a read-only node.")
+        return ".".join(reversed(paths))
 
-        if not check_type(value, self._meta.type):
-            raise TypeError(
-                "Cannot update `{!r}` node with value {!r}.".format(
-                    self._meta.type, value
-                )
+    def _update_value(self, obj, *, entry_name=None, action="update"):
+        assert action in ("update", "merge")
+
+        if entry_name is None:
+            host = self
+        else:
+            assert self._meta.is_container
+
+            if entry_name not in self._entries:
+                if not self._meta.attributes.writable:
+                    raise AttributeError(
+                        f"Entry {entry_name!r} not found on container {self.dotted_path()!r}."
+                    )
+                else:
+                    host = self
+                    obj = {entry_name: obj}
+                    action = "merge"
+            else:
+                host = self._entries[entry_name]
+
+        if self._finalized and not host._meta.attributes.writable:
+            raise AttributeError(
+                f"Cannot update read-only entry {host.dotted_path()!r}."
             )
 
-        self._value = cast(value, self._meta.type)
+        if host._meta.is_container:
+            if not isinstance(obj, dict):
+                raise TypeError(
+                    f"Expect value to be a dict for container entry {host.dotted_path()!r}, got {type(obj)!r}."
+                )
+
+            extra_entries = set(obj) - set(host._entries)
+            if not host._meta.attributes.writable and extra_entries:
+                verbose_extra_entries = ", ".join(map("{!r}".format, extra_entries))
+                raise AttributeError(
+                    f"Adding extra entries {verbose_extra_entries} to read-only container {host.dotted_path()!r} is forbidden."
+                )
+
+            if host._meta.attributes.writable and action == "update":
+                host._entries.clear()
+                host._alias_entries.clear()
+
+            for name, value in obj.items():
+                if name in host._entries:
+                    host._entries[name]._update_value(value, action=action)
+                else:
+                    entry = host.__add_entry(name, value, attributes="writable")
+                    if host._finalized:
+                        entry.finalize()
+        else:
+            if not check_type(obj, host._meta.type):
+                raise TypeError(
+                    f"Cannot update {host._meta.type!r} type entry {host.dotted_path()!r} with value {obj!r}."
+                )
+
+            host._value = cast(obj, host._meta.type)
 
     def __getattr__(self, name):
         if name == "__dict__":
@@ -159,15 +216,7 @@ class SchemeNode:
         if name in self._alias_entries:
             name = self._alias_entries[name]
 
-        if name in self._entries:
-            self._entries[name]._update_value(value)
-        else:
-            if not self._meta.attributes.writable:
-                raise RuntimeError("Cannot set attribute on read-only node.")
-
-            entry = self.__add_entry(name, value, attributes="writable")
-            if self._finalized:
-                entry.finalize()
+        self._update_value(value, entry_name=name, action="update")
 
     def __add_entry(self, name, value, attributes=None):
 
@@ -228,14 +277,6 @@ class SchemeNode:
 
         self._alias_entries[name] = target
         return self
-
-    def __get_meta_by_path(self, path: str):
-        ptr = self
-        for part in path.split("."):
-            ptr = getattr(ptr, part, None)
-            if not isinstance(ptr, self.__class__):
-                return InvalidMeta()
-        return ptr._meta
 
     def __verify_alias(self):
         if not self._meta.is_container:
@@ -315,20 +356,7 @@ class SchemeNode:
         return dct
 
     def merge_from_dict(self, dct):
-        for key, value in dct.items():
-            if key not in self._entries:
-                raise AttributeError(f"Key {key!r} is not an entry.")
-
-            entry = self._entries[key]
-            if entry._meta.is_container:
-                if not isinstance(value, dict):
-                    raise TypeError(
-                        f"Expect value to be a dict for container entry {key!r}, got {type(value)!r}."
-                    )
-                entry.merge_from_dict(value)
-            else:
-                entry._update_value(value)
-
+        self._update_value(dct, action="merge")
         return self
 
     def merge_from_file(self, filename: str):
