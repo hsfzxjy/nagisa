@@ -94,6 +94,89 @@ class SchemeNode:
 
         self._finalized = False
 
+    def __getattr__(self, name):
+        if name == "__dict__":
+            raise AttributeError
+
+        if name not in set(self._alias_entries) | set(self._entries):
+            raise AttributeError('Attribute "{}" not found.'.format(name))
+
+        if name in self._alias_entries:
+            name = self._alias_entries[name]
+
+        node = self._entries[name]
+        if node._meta.is_container:
+            return node
+        else:
+            return node._value
+
+    def __setattr__(self, name, value):
+
+        if any(name.endswith(x) for x in SchemeNode.__slots__):
+            object.__setattr__(self, name, value)
+            return
+
+        self.__check_finalized("update attribute", True)
+        self.__check_is_container("update attribute", True)
+
+        if name in self._alias_entries:
+            name = self._alias_entries[name]
+
+        self._update_value(value, entry_name=name, action="update")
+
+    def __str__(self):
+        return self.to_str(level=0)
+
+    def __check_finalized(self, action: str, value: bool):
+        if self._finalized != value:
+            raise RuntimeError(
+                "Cannot {} {} the object is finalized.".format(
+                    action, "before" if value else "after"
+                )
+            )
+
+    def __check_is_container(self, action: str, value: bool):
+        if self._meta.is_container != value:
+            raise RuntimeError(
+                "Cannot {} on {} node.".format(
+                    action, "non-container" if value else "container"
+                )
+            )
+
+    def __verify_alias(self):
+        if not self._meta.is_container:
+            return
+
+        duplicated = set(self._alias_entries) & set(self._entries)
+        assert not duplicated, "Aliases {} duplicated with existing entries.".format(
+            ", ".join('"{}"'.format(x) for x in duplicated)
+        )
+
+        for name, target in self._alias_entries.items():
+            visited = [name, target]
+            ptr = target
+            while ptr not in self._entries:
+                if ptr not in self._alias_entries:
+                    raise RuntimeError(
+                        "Broken alias {} (not an entry).".format(" -> ".join(visited))
+                    )
+                ptr = self._alias_entries[ptr]
+                if ptr in visited:
+                    raise RuntimeError(
+                        "Cyclic alias {}.".format(" -> ".join(visited + [ptr]))
+                    )
+                visited.append(ptr)
+            self._alias_entries[name] = ptr
+
+    def __add_entry(self, name, value, attributes=None):
+
+        if name in dir(self):
+            raise RuntimeError('Cannot use preserved name "{}" as entry.'.format(name))
+
+        node = self.new_from_primitive(value, parent=self, attributes=attributes)
+        self._entries[name] = node
+        return node
+
     @classmethod
     def __parse_attributes(cls, attributes):
         ns = _AttributeSlots()
@@ -112,24 +195,17 @@ class SchemeNode:
         cls._parse_attributes(ns, attributes)
         return ns
 
+    def _walk(self, path, func):
+        if not self._meta.is_container:
+            func(path, self)
+            return
+
+        for key, entry in self._entries.items():
+            entry._walk(path + [key], func)
+
     @classmethod
     def _parse_attributes(cls, ns, attributes):
         pass
-
-    def dotted_path(self):
-        entry = self
-        paths = []
-        while True:
-            parent = entry._parent() if entry._parent is not None else None
-            if parent is None:
-                break
-            for k, v in parent._entries.items():
-                if v is entry:
-                    paths.append(k)
-                    break
-            entry = parent
-
-        return ".".join(reversed(paths))
 
     def _update_value(self, obj, *, entry_name=None, action="update"):
         assert action in ("update", "merge")
@@ -188,44 +264,20 @@ class SchemeNode:
 
             host._value = cast(obj, host._meta.type)
 
-    def __getattr__(self, name):
-        if name == "__dict__":
-            raise AttributeError
+    def dotted_path(self):
+        entry = self
+        paths = []
+        while True:
+            parent = entry._parent() if entry._parent is not None else None
+            if parent is None:
+                break
+            for k, v in parent._entries.items():
+                if v is entry:
+                    paths.append(k)
+                    break
+            entry = parent
 
-        if name not in set(self._alias_entries) | set(self._entries):
-            raise AttributeError('Attribute "{}" not found.'.format(name))
-
-        if name in self._alias_entries:
-            name = self._alias_entries[name]
-
-        node = self._entries[name]
-        if node._meta.is_container:
-            return node
-        else:
-            return node._value
-
-    def __setattr__(self, name, value):
-
-        if any(name.endswith(x) for x in SchemeNode.__slots__):
-            object.__setattr__(self, name, value)
-            return
-
-        self.__check_finalized("update attribute", True)
-        self.__check_is_container("update attribute", True)
-
-        if name in self._alias_entries:
-            name = self._alias_entries[name]
-
-        self._update_value(value, entry_name=name, action="update")
-
-    def __add_entry(self, name, value, attributes=None):
-
-        if name in dir(self):
-            raise RuntimeError('Cannot use preserved name "{}" as entry.'.format(name))
-
-        node = self.new_from_primitive(value, parent=self, attributes=attributes)
-        self._entries[name] = node
-        return node
+        return ".".join(reversed(paths))
 
     def entry(self, name, node):
         assert name not in self._entries, 'Entry name "{}" already exists.'.format(name)
@@ -248,22 +300,6 @@ class SchemeNode:
 
         return self
 
-    def __check_finalized(self, action: str, value: bool):
-        if self._finalized != value:
-            raise RuntimeError(
-                "Cannot {} {} the object is finalized.".format(
-                    action, "before" if value else "after"
-                )
-            )
-
-    def __check_is_container(self, action: str, value: bool):
-        if self._meta.is_container != value:
-            raise RuntimeError(
-                "Cannot {} on {} node.".format(
-                    action, "non-container" if value else "container"
-                )
-            )
-
     def alias(self, name: str, target: str):
         self.__check_finalized("create alias", False)
         self.__check_is_container("create alias", True)
@@ -277,31 +313,6 @@ class SchemeNode:
 
         self._alias_entries[name] = target
         return self
-
-    def __verify_alias(self):
-        if not self._meta.is_container:
-            return
-
-        duplicated = set(self._alias_entries) & set(self._entries)
-        assert not duplicated, "Aliases {} duplicated with existing entries.".format(
-            ", ".join('"{}"'.format(x) for x in duplicated)
-        )
-
-        for name, target in self._alias_entries.items():
-            visited = [name, target]
-            ptr = target
-            while ptr not in self._entries:
-                if ptr not in self._alias_entries:
-                    raise RuntimeError(
-                        "Broken alias {} (not an entry).".format(" -> ".join(visited))
-                    )
-                ptr = self._alias_entries[ptr]
-                if ptr in visited:
-                    raise RuntimeError(
-                        "Cyclic alias {}.".format(" -> ".join(visited + [ptr]))
-                    )
-                visited.append(ptr)
-            self._alias_entries[name] = ptr
 
     def to_str(self, level=0, indent_size=2):
         if not self._meta.is_container:
@@ -322,18 +333,6 @@ class SchemeNode:
             retstr += "{} -> {}\n".format(src, target)
 
         return retstr
-
-    def __str__(self):
-        return self.to_str(level=0)
-
-    @classmethod
-    def from_class(cls, template):
-        return _class_to_scheme(cls, template)
-
-    @staticmethod
-    def writable(klass):
-        klass.__writable__ = True
-        return klass
 
     def value_dict(self):
         if not self._meta.is_container:
@@ -378,13 +377,14 @@ class SchemeNode:
 
         return self
 
-    def _walk(self, path, func):
-        if not self._meta.is_container:
-            func(path, self)
-            return
+    @classmethod
+    def from_class(cls, template):
+        return _class_to_scheme(cls, template)
 
-        for key, entry in self._entries.items():
-            entry._walk(path + [key], func)
+    @staticmethod
+    def writable(klass):
+        klass.__writable__ = True
+        return klass
 
 
 class _class_to_scheme:
