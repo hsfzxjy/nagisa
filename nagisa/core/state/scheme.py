@@ -4,7 +4,7 @@ import collections
 from typing import List, Any
 from nagisa.utils.primitive.typing import *
 from nagisa.utils.patterns import modifier
-from nagisa.utils.data_handling.yaml import load_yaml_with_base
+from nagisa.utils.serialization.yaml import load_yaml_with_base
 
 
 class NodeMeta:
