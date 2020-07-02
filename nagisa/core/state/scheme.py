@@ -17,9 +17,6 @@ class NodeMeta:
         self.is_container = is_container
         self.is_alias = is_alias
 
-    def is_valid(self):
-        return True
-
 
 class _AttributeSlots:
     pass
