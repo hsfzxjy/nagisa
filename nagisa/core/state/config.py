@@ -8,6 +8,7 @@ from nagisa.utils.primitive.typing import cast, str_to_object, Malformed
 class ConfigNode(SchemeNode):
 
     __slots__ = []
+    __instance = None
 
     @classmethod
     def _parse_attributes(cls, ns, attributes):
@@ -82,3 +83,13 @@ class ConfigNode(SchemeNode):
         envvar._registry.sync_with(self.ENVVAR)
         envvar._registry.scan(dirname, caller_level=-4)
         return self
+
+    @classmethod
+    def _handle_singleton(cls, instance):
+        if cls.__instance is not None:
+            raise RuntimeError  # TODO detailed info
+        cls.__instance = instance
+
+    @classmethod
+    def instance(cls):
+        return cls.__instance

@@ -375,7 +375,13 @@ class SchemeNode:
         return self
 
     @classmethod
-    def from_class(cls, template):
+    def from_class(cls, singleton=False):
+        def _decorator(template):
+            return _class_to_scheme(cls, template, singleton=singleton)
+
+        if isinstance(singleton, bool):
+            return _decorator
+        template = singleton
         return _class_to_scheme(cls, template)
 
     @staticmethod
@@ -383,16 +389,29 @@ class SchemeNode:
         klass.__writable__ = True
         return klass
 
+    @classmethod
+    def _handle_singleton(cls, instance):
+        pass
+
 
 class _class_to_scheme:
-    def __init__(self, scheme_class, template):
+    __slots__ = ("scheme_class", "template", "singleton", "__instance")
+
+    def __init__(self, scheme_class, template, singleton=False):
         self.scheme_class = scheme_class
         self.template = template
+        self.singleton = singleton
+        self.__instance = None
 
     def __repr__(self):
         return f"<{self.scheme_class.__name__} Constructor>"
 
     def __call__(self):
+        if self.singleton:
+            if self.__instance is None:
+                self.__instance = self._parse(self.scheme_class, self.template)
+                self.scheme_class._handle_singleton(self.__instance)
+            return self.__instance
         return self._parse(self.scheme_class, self.template)
 
     def _parse(self, scheme_class, template):
@@ -451,7 +470,7 @@ class _class_to_scheme:
         elif isinstance(annotations, list):
             assert len(annotations) > 0
         else:
-            raise TypeError("Annotations `{!r}` cannot be parsed.".format(annotations))
+            raise TypeError(f"Annotations {annotations!r} cannot be parsed.")
 
         T = None
         if is_acceptable_type(annotations[0]):

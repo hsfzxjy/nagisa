@@ -424,3 +424,31 @@ class TestMerge(unittest.TestCase):
     def test_load_from_file_typeerror(self):
         with self.assertRaises(TypeError):
             cfg = self.Config().merge_from_file("yaml_example/a/b.yaml").finalize()
+
+
+class TestSingleton(unittest.TestCase):
+    def test_singleton_True(self):
+        @scheme.SchemeNode.from_class(singleton=True)
+        class Config:
+            pass
+
+        self.assertIs(Config(), Config())
+
+    def test_singleton_False(self):
+        @scheme.SchemeNode.from_class(singleton=False)
+        class Config:
+            pass
+
+        self.assertIsNot(Config(), Config())
+
+    def test_singleton_different_template(self):
+        @scheme.SchemeNode.from_class(singleton=True)
+        class ConfigA:
+            pass
+
+        @scheme.SchemeNode.from_class(singleton=True)
+        class ConfigB:
+            pass
+
+        a = ConfigA()
+        b = ConfigB()

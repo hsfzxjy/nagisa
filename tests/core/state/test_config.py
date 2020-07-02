@@ -70,3 +70,33 @@ class Test_merge(unittest.TestCase):
                 "sub": {"foo_3": "remainder", "foo_4": [0, 1, 2]},
             },
         )
+
+
+class TestSingleton(unittest.TestCase):
+    def setUp(self):
+        import sys, importlib
+
+        del sys.modules["nagisa.core.state.config"]
+        self.config_module = importlib.import_module("nagisa.core.state.config")
+
+    def test_singleton(self):
+        @self.config_module.ConfigNode.from_class(singleton=True)
+        class Config:
+            pass
+
+        cfg = Config()
+        self.assertIs(cfg, self.config_module.ConfigNode.instance())
+
+    def test_singleton_fail(self):
+        @self.config_module.ConfigNode.from_class(singleton=True)
+        class ConfigA:
+            pass
+
+        @self.config_module.ConfigNode.from_class(singleton=True)
+        class ConfigB:
+            pass
+
+        a = ConfigA()
+        with self.assertRaises(RuntimeError):
+            ConfigB()
+
