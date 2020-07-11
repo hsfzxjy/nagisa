@@ -17,7 +17,7 @@ class BaseTestCase(unittest.TestCase):
 
 
 class TestCheckDep(BaseTestCase):
-    def test_valid(self):
+    def test_basic(self):
         @self.s.Resource.r
         def res1(cfg, meta, id):
             pass
@@ -225,14 +225,14 @@ class TestCache(BaseTestCase):
 
 
 class TestGetIdList(BaseTestCase):
-    def test_valid(self):
+    def test_basic(self):
         @self.s.Resource.r
         def id_list(cfg, meta):
             return list(range(10))
 
         self.assertEqual(self.DataResolver(None, None).get_id_list(), list(range(10)))
 
-    def test_valid_with_dep(self):
+    def test_basic_with_dep(self):
         @self.s.Resource.r
         def nums(cfg, meta):
             return list(range(meta))

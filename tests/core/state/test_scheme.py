@@ -65,7 +65,7 @@ class TestInit(unittest.TestCase):
         for value, T in cases:
             scheme.SchemeNode(default=value, type_=T)
 
-    def test_init_with_default_and_type_failure(self):
+    def test_init_with_default_and_type_fail(self):
         cases = [
             [1.0, int],
             [True, int],

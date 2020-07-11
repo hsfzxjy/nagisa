@@ -9,7 +9,7 @@ def str_to_ast_node(stmt):
 
 
 class TestParseType(unittest.TestCase):
-    def test_valid(self):
+    def test_basic(self):
         cases = [
             ("int", int),
             ("float", float),
@@ -24,7 +24,7 @@ class TestParseType(unittest.TestCase):
         for stmt, target in cases:
             self.assertEqual(prim_ast.parse_type(str_to_ast_node(stmt)), target)
 
-    def test_failure(self):
+    def test_fail(self):
         cases = [
             "intt",
             "(str,)",
@@ -37,7 +37,7 @@ class TestParseType(unittest.TestCase):
 
 
 class TestNodeToObject(unittest.TestCase):
-    def test_valid(self):
+    def test_basic(self):
         cases = [
             ("42", 42),
             ("42.", 42.0),
@@ -55,7 +55,7 @@ class TestNodeToObject(unittest.TestCase):
         for stmt, target in cases:
             self.assertEqual(prim_ast.node_to_object(str_to_ast_node(stmt)), target)
 
-    def test_failure(self):
+    def test_fail(self):
         cases = [
             "str",
             "1+4j",
