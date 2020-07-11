@@ -120,7 +120,6 @@ class SchemeNode:
             object.__setattr__(self, name, value)
             return
 
-        self.__check_finalized("update attribute", True)
         self.__check_is_container("update attribute", True)
 
         if name in self._alias_entries:
