@@ -1,6 +1,6 @@
 import enum
 
-from nagisa.utils.patterns.registry import Registry
+from nagisa.utils.misc.registry import Registry
 
 
 class _Action(enum.Enum):
