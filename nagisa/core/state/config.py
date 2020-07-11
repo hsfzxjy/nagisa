@@ -1,7 +1,7 @@
 import functools
 import argparse
-from nagisa.core.state.scheme import SchemeNode
 from nagisa.core.state import envvar
+from nagisa.core.state.scheme import SchemeNode
 from nagisa.utils.primitive.typing import cast, str_to_object, Malformed
 
 
