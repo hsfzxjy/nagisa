@@ -91,5 +91,9 @@ class ConfigNode(SchemeNode):
         cls.__instance = instance
 
     @classmethod
-    def instance(cls):
+    def instance(cls, raise_exc=False):
+        if raise_exc and cls.__instance is None:
+            raise RuntimeError(
+                "This feature requires a singleton config node being initialized."
+            )
         return cls.__instance
