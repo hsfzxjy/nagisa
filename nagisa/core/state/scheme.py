@@ -112,6 +112,8 @@ class SchemeNode:
         else:
             return node._value
 
+    __getitem__ = __getattr__
+
     def __setattr__(self, name, value):
 
         if any(name.endswith(x) for x in SchemeNode.__slots__):
@@ -125,6 +127,8 @@ class SchemeNode:
             name = self._alias_entries[name]
 
         self._update_value(value, entry_name=name, action="update")
+
+    __setitem__ = __setattr__
 
     def __str__(self):
         return self.to_str(level=0)
@@ -335,6 +339,12 @@ class SchemeNode:
             retstr += "{} -> {}\n".format(src, target)
 
         return retstr
+
+    def value_by_path(self, path: str):
+        node = self
+        for part in path.split("."):
+            node = getattr(node, part)
+        return node
 
     def value_dict(self):
         if not self._meta.is_container:
