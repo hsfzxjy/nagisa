@@ -13,7 +13,7 @@ __all__ = [
 ]
 
 trans_seq = ConfigValue(
-    f"{__name__}.trans_seq", is_func=True, default=lambda *_, **__: {}
+    f"{__name__}.trans_seq", is_func=True, default=lambda *_, **__: []
 )
 trans_kwargs = ConfigValue(
     f"{__name__}.trans_kwargs", is_func=True, default=lambda *_, **__: {}
