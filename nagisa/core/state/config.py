@@ -97,3 +97,49 @@ class ConfigNode(SchemeNode):
                 "This feature requires a singleton config node being initialized."
             )
         return cls.__instance
+
+
+class ConfigValue(object):
+
+    _Null = object()
+
+    def __init__(self, name, is_func: bool = False, default=_Null):
+        self.__name = name
+        self.__config_path = None
+        self.__value = self._Null
+        self.__default = default
+        self.__is_func = is_func
+
+    def set(self, value):
+        if self.__config_path is not None:
+            raise RuntimeError(
+                f"Cannot set value for {self!r} after its config path being set."
+            )
+
+        self.__value = value
+        return value
+
+    def set_cfg(self, path):
+        if self.__value is not self._Null:
+            raise RuntimeError(
+                f"Cannot set config path for {self!r} after its value being set."
+            )
+        self.__config_path = path
+
+    def value(self, *args, **kwargs):
+        if self.__config_path is not None:
+            cfg = ConfigNode.instance()
+            if cfg is None:
+                raise RuntimeError(
+                    f"{self!r} requires a singleton config node being initialized."
+                )
+            return cfg.value_by_path(self.__config_path)
+        elif self.__value is not self._Null or self.__default is not self._Null:
+            value = self.__value if self.__value is not self._Null else self.__default
+            if callable(value):
+                return value(*args, **kwargs)
+            return value
+        else:
+            raise RuntimeError(f"Neither config path nor value is set for {self!r}.")
+
+    func = value
