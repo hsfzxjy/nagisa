@@ -45,7 +45,12 @@ class SchemeNode:
         if isinstance(value, dict):
             result = cls(attributes=attributes, is_container=True, parent=parent)
             for k, v in value.items():
-                result.entry(k, cls.new_from_primitive(v, parent, attributes))
+                result.entry(
+                    k,
+                    cls.new_from_primitive(
+                        value=v, parent=result, attributes=attributes
+                    ),
+                )
         else:
             result = cls(default=value, parent=parent, attributes=attributes)
 
