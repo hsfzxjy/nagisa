@@ -9,7 +9,7 @@ try:
 except ModuleNotFoundError:
     logger.warn("Library `PyYAML` not found.")
 
-from nagisa.utils.os.path import resolve_until_exists
+from nagisa.io.path import resolve_until_exists
 
 BASE_KEY = "_BASE_"
 

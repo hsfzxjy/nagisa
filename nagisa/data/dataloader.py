@@ -20,7 +20,7 @@ class CollateFn:
             items = [item_dict[key] for item_dict in item_dicts]
             f = Collate.select(key, self.cfg)
             if f is not None:
-                items = f(self.cfg, items)
+                items = f(self.cfg, key, items)
             else:
                 items = default_collate(items)
                 f = default_collate

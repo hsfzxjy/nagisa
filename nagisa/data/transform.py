@@ -1,5 +1,5 @@
-from nagisa.utils.misc.cache import Cache
-from nagisa.utils.misc.naming import camel_to_snake
+from nagisa.misc.cache import Cache
+from nagisa.misc.naming import camel_to_snake
 from nagisa.core.state.scheme import SchemeNode
 from nagisa.core.state.config import ConfigValue, ConfigNode
 
@@ -79,7 +79,7 @@ class BaseTransform(object):
 __cache = Cache()
 
 
-def apply_transform(cfg, meta, items_dict):
+def apply_transform(cfg, meta, item_dict):
     trans_seq_list = trans_seq.func(cfg=cfg, meta=meta)
     cache_key = (meta, *trans_seq_list)
 
@@ -102,7 +102,7 @@ def apply_transform(cfg, meta, items_dict):
         __cache.set(cache_key, transforms)
 
     for transform in transforms:
-        items_dict = transform(items_dict)
+        item_dict = transform(item_dict)
 
-    return items_dict
+    return item_dict
 

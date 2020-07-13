@@ -2,9 +2,9 @@ import weakref
 import inspect
 import collections
 from typing import List, Any
-from nagisa.utils.primitive.typing import *
-from nagisa.utils.misc import accessor
-from nagisa.utils.serialization.yaml import load_yaml_with_base
+from nagisa.primitive.typing import *
+from nagisa.misc import accessor
+from nagisa.serialization.yaml import load_yaml_with_base
 
 
 class NodeMeta:

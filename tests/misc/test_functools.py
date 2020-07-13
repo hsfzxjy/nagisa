@@ -1,6 +1,6 @@
 import types
 import unittest
-from nagisa.utils.misc import functools
+from nagisa.misc import functools
 
 
 def _make_function(params):

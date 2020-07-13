@@ -72,4 +72,33 @@ class MultiEntryRegistry(Registry):
 
 
 class MultiEntryFunctionRegistry(FunctionRegistry, MultiEntryRegistry):
-    ...
+    pass
+
+
+def _when_annotator_fn(lst, f):
+    lst.append(f)
+    return lst
+
+
+class MultiEntryConditionalFunctionRegistry(MultiEntryFunctionRegistry):
+
+    _when_spec = [...]
+
+    @classmethod
+    def when(cls, f):
+        from .functools import function_annotator
+
+        return function_annotator(
+            f, cls._when_spec, "__when__", list, _when_annotator_fn
+        )
+
+    def _check_value(self, key, f):
+        new_f = super()._check_value(key, f)
+        self.when(None)(new_f)
+
+        return new_f
+
+    def select(self, key, *args):
+        for f in self._mapping[key]:
+            if not f.__when__ or any(cond(*args) for cond in f.__when__):
+                return f

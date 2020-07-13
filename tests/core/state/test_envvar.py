@@ -2,7 +2,7 @@ import os
 import contextlib
 import unittest
 from nagisa.core.state import envvar
-from nagisa.utils.primitive.typing import List, Optional
+from nagisa.primitive.typing import List, Optional
 
 
 @contextlib.contextmanager

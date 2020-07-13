@@ -2,8 +2,8 @@ import functools
 import argparse
 from nagisa.core.state import envvar
 from nagisa.core.state.scheme import SchemeNode
-from nagisa.utils.misc.functools import adapt_params_spec
-from nagisa.utils.primitive.typing import cast, str_to_object, Malformed
+from nagisa.misc.functools import adapt_params_spec
+from nagisa.primitive.typing import cast, str_to_object, Malformed
 
 
 class ConfigNode(SchemeNode):

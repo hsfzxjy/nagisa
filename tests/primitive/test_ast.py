@@ -1,7 +1,7 @@
 import ast
 import unittest
-from nagisa.utils.primitive.typing import List
-from nagisa.utils.primitive import ast as prim_ast
+from nagisa.primitive.typing import List
+from nagisa.primitive import ast as prim_ast
 
 
 def str_to_ast_node(stmt):
