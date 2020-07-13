@@ -2,8 +2,10 @@ import sys
 import torch
 import unittest
 
+from nagisa.misc.test import TorchTestCase
 
-class BaseDatasetTestCase(unittest.TestCase):
+
+class BaseDatasetTestCase(TorchTestCase):
     def setUp(self):
         for n in list(filter(lambda x: x.startswith("nagisa.data"), sys.modules)):
             del sys.modules[n]
@@ -26,21 +28,6 @@ class BaseDatasetTestCase(unittest.TestCase):
         s.item_keys.set(["item1", "item2", "item3"])
         self.dataset = s.get_dataset("", "")
 
-    def assertTensorEqual(self, t1: torch.Tensor, t2: torch.Tensor, msg=None):
-        self.assertIsInstance(t1, torch.Tensor, "First argument is not a Tensor")
-        self.assertIsInstance(t2, torch.Tensor, "Second argument is not a Tensor")
-
-        standardMsg = ""
-        if t1.device != t2.device:
-            standardMsg += f"Device {t1.device} != {t2.device}\n"
-        elif t1.size() != t2.size():
-            standardMsg += f"Tensor shape {t1.size()} != {t2.size()}\n"
-        elif (t1 - t2).abs().sum().item() != 0:
-            standardMsg += f"Tensor {t1} != {t2}\n"
-        else:
-            return
-
-        self.fail(self._formatMessage(msg, standardMsg))
 
     def assertItemsEqual(self, items_seq1, items_seq2):
         self.assertEqual(len(items_seq1), len(items_seq2))
