@@ -40,12 +40,42 @@ class Registry:
         return self._mapping[key]
 
 
-class FunctionRegistry(Registry):
+class Selector(object):
+    def __init__(self, name, cond_spec=[...]):
+        self._mapping = []
+        self.__name = name
+        self._cond_spec = cond_spec
+
+    def _register(self, cond, value):
+        from .functools import adapt_params_spec
+
+        key = adapt_params_spec(self._cond_spec, cond)
+        value = self._check_value(key, value)
+        self._mapping.append((key, value))
+        return value
+
+    def register(self, key, value=None):
+        def _decorator(value):
+            return self._register(key, value)
+
+        if value is None:
+            return _decorator
+
+        return _decorator(value)
+
+    r = register
+
+    def select(self, *args):
+        for cond, value in self._mapping:
+            if cond(*args):
+                return value
+
+        return None
+
+
+class FunctionValueMixin(object):
 
     _function_spec = [...]
-
-    def _get_function_spec(self, key, f):
-        pass
 
     def _check_value(self, key, f):
         from .functools import adapt_params_spec
@@ -54,10 +84,11 @@ class FunctionRegistry(Registry):
         if getattr(f, "__is_adapter__", False):
             return f
 
-        if spec is None:
-            spec = self._get_function_spec(key, f)
-
         return adapt_params_spec(self._function_spec, f, preserve_meta=True)
+
+
+class FunctionRegistry(FunctionValueMixin, Registry):
+    pass
 
 
 class MultiEntryRegistry(Registry):
@@ -102,3 +133,10 @@ class MultiEntryConditionalFunctionRegistry(MultiEntryFunctionRegistry):
         for f in self._mapping[key]:
             if not f.__when__ or any(cond(*args) for cond in f.__when__):
                 return f
+
+
+class FunctionSelector(FunctionValueMixin, Selector):
+    def __init__(self, name, func_spec=[...], cond_spec=[...]):
+        super().__init__(name, cond_spec)
+        self._func_spec = func_spec
+
