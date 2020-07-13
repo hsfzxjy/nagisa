@@ -86,3 +86,34 @@ def modify(
         action = _Action.NOTFOUND
 
     _ModifierActionRegistry[action](directive, obj, name, value, attrsetter)
+
+
+__Null = object()
+
+
+def __default_attrgetter(obj, name):
+    result = getattr(obj, name, __Null)
+    if result is __Null and hasattr(obj, "__getitem__"):
+        if name.isdigit():
+            try:
+                result = obj[int(name)]
+            except KeyError:
+                result = __Null
+        else:
+            try:
+                result = obj[name]
+            except KeyError:
+                result = __Null
+
+    if result is __Null:
+        raise AttributeError(f"{obj!r} object has no attribute {name!r}")
+
+    return result
+
+
+def get(obj, path: str, attrgetter=__default_attrgetter):
+    for name in path.split("."):
+        obj = attrgetter(obj, name)
+
+    return obj
+

@@ -62,31 +62,6 @@ class TestRegisterAndSelect(unittest.TestCase):
         with self.assertRaises(RuntimeError):
 
             @reg.r
-            def foo(cfg, metaa):
-                pass
-
-        with self.assertRaises(RuntimeError):
-
-            @reg.r
-            def foo(cfgg, meta):
-                pass
-
-        with self.assertRaises(RuntimeError):
-
-            @reg.r
-            def foo(cfg):
-                pass
-
-        with self.assertRaises(RuntimeError):
-
-            @reg.r
-            @reg.when(lambda c: c)
-            def foo(cfg, meta):
-                pass
-
-        with self.assertRaises(RuntimeError):
-
-            @reg.r
             @reg.when(lambda c, m, g: c)
             def foo(cfg, meta):
                 pass

@@ -21,26 +21,28 @@ def _when_annotator_fn(lst, f):
 
 
 def when(f=None, spec=[...]):
-
     return function_annotator(f, spec, "__when__", list, _when_annotator_fn)
 
 
 class ResourceItemRegistry(MultiEntryFunctionRegistry):
 
-    _function_spec = ["cfg", "meta", ...]
+    _function_spec = ["cfg | c?", "meta | m?", ...]
 
     def _check_value(self, key, f):
-        deps = super()._check_value(key, f)
+        new_f = super()._check_value(key, f)
+        deps = new_f.__remaining__
         if deps and deps[0] == "id":
             scope = Scope.LOCAL
             deps = deps[1:]
         else:
             scope = Scope.GLOBAL
-        f.__deps__ = tuple(deps)
-        f.__scope__ = scope
-        self.when()(f)
+        new_f.__deps__ = tuple(deps)
+        new_f.__scope__ = scope
+        self.when()(new_f)
 
-    when = partial(when, spec=["*", "*"])
+        return new_f
+
+    when = partial(when, spec=["cfg | c?", "meta | m?"])
 
     def select(self, key, cfg, meta):
         for f in self._mapping[key]:
@@ -54,8 +56,10 @@ class CollateRegistry(MultiEntryFunctionRegistry):
     _function_spec = ["cfg", "*"]
 
     def _check_value(self, key, f):
-        super()._check_value(key, f)
+        f = super()._check_value(key, f)
         self.when()(f)
+
+        return f
 
     when = partial(when, spec=["*"])
 

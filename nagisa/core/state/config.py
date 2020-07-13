@@ -2,6 +2,7 @@ import functools
 import argparse
 from nagisa.core.state import envvar
 from nagisa.core.state.scheme import SchemeNode
+from nagisa.utils.misc.functools import adapt_params_spec
 from nagisa.utils.primitive.typing import cast, str_to_object, Malformed
 
 
@@ -103,20 +104,29 @@ class ConfigValue(object):
 
     _Null = object()
 
-    def __init__(self, name, is_func: bool = False, default=_Null):
+    def _wrap(self, value):
+        if callable(value) and self.__func_spec is not None:
+            return adapt_params_spec(self.__func_spec, value)
+        return value
+
+    def __init__(self, name, func_spec=None, default=_Null):
         self.__name = name
         self.__config_path = None
         self.__value = self._Null
-        self.__default = default
-        self.__is_func = is_func
+        self.__func_spec = func_spec
+        self.__default = self._wrap(default)
 
     def set(self, value):
         if self.__config_path is not None:
             raise RuntimeError(
                 f"Cannot set value for {self!r} after its config path being set."
             )
+        if self.__value is not self._Null:
+            raise RuntimeError(
+                f"Cannot set value on {self!r} for more than once."
+            )            
 
-        self.__value = value
+        self.__value = self._wrap(value)
         return value
 
     def set_cfg(self, path):
@@ -124,6 +134,10 @@ class ConfigValue(object):
             raise RuntimeError(
                 f"Cannot set config path for {self!r} after its value being set."
             )
+        if self.__config_path is not None:
+            raise RuntimeError(
+                f"Cannot set config path on {self!r} for more than once."
+            )            
         self.__config_path = path
 
     def value(self, *args, **kwargs):

@@ -3,7 +3,7 @@ import inspect
 import collections
 from typing import List, Any
 from nagisa.utils.primitive.typing import *
-from nagisa.utils.misc import modifier
+from nagisa.utils.misc import accessor
 from nagisa.utils.serialization.yaml import load_yaml_with_base
 
 
@@ -382,7 +382,7 @@ class SchemeNode:
             return key in obj._entries
 
         for directive, value in directives:
-            modifier.modify(
+            accessor.modify(
                 self, directive, value, ext_syntax, _attrsetter, _attrchecker
             )
 

@@ -1,29 +1,26 @@
 import collections
 
-from .functools import match_params
-
 
 class Registry:
     def __init__(self, name):
         self._mapping = {}
         self.__name = name
 
-    def _check_value(self, ley, value):
-        pass
+    def _check_value(self, key, value):
+        return value
 
     def _register(self, key, value):
         if key in self._mapping:
             raise KeyError(
                 f"Key {key!r} already registered in <Registry: {self.__name}>"
             )
-        self._check_value(key, value)
+        value = self._check_value(key, value)
         self._mapping[key] = value
         return value
 
     def register(self, key, value=None):
         def _decorator(value):
-            self._register(key, value)
-            return value
+            return self._register(key, value)
 
         if value is None:
             if hasattr(key, "__name__"):
@@ -32,8 +29,7 @@ class Registry:
             else:
                 return _decorator
 
-        self._register(key, value)
-        return value
+        return _decorator(value)
 
     r = register
 
@@ -52,12 +48,16 @@ class FunctionRegistry(Registry):
         pass
 
     def _check_value(self, key, f):
+        from .functools import adapt_params_spec
 
         spec = self._function_spec
+        if getattr(f, "__is_adapter__", False):
+            return f
+
         if spec is None:
             spec = self._get_function_spec(key, f)
 
-        return match_params(f, self._function_spec)
+        return adapt_params_spec(self._function_spec, f, preserve_meta=True)
 
 
 class MultiEntryRegistry(Registry):
@@ -65,10 +65,10 @@ class MultiEntryRegistry(Registry):
         super().__init__(name)
         self._mapping = collections.defaultdict(list)
 
-    def _register(self, key, f):
-        self._check_value(key, f)
-        self._mapping[key].append(f)
-        return f
+    def _register(self, key, value):
+        value = self._check_value(key, value)
+        self._mapping[key].append(value)
+        return value
 
 
 class MultiEntryFunctionRegistry(FunctionRegistry, MultiEntryRegistry):

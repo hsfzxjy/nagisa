@@ -14,19 +14,13 @@ class BaseDatasetTestCase(unittest.TestCase):
         self.s = s
 
         @s.Resource.r
-        def id_list(cfg, meta):
+        def id_list():
             return list(range(100))
 
-        @s.Item.r
-        def item1(cfg, meta, id):
-            return id
-
-        @s.Item.r
-        def item2(cfg, meta, id):
-            return id
-
-        @s.Item.r
-        def item3(cfg, meta, id):
+        @s.Item.r("item1")
+        @s.Item.r("item2")
+        @s.Item.r("item3")
+        def item1(id):
             return id
 
         s.item_keys.set(["item1", "item2", "item3"])

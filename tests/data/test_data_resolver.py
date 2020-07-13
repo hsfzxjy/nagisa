@@ -19,26 +19,26 @@ class BaseTestCase(unittest.TestCase):
 class TestCheckDep(BaseTestCase):
     def test_basic(self):
         @self.s.Resource.r
-        def res1(cfg, meta, id):
+        def res1(id):
             pass
 
         @self.s.Resource.r
-        def res2(cfg, meta, id, res1):
+        def res2(id, res1):
             pass
 
         @self.s.Item.r
-        def item1(cfg, meta, id, res1, res2):
+        def item1(id, res1, res2):
             pass
 
         self.DataResolver(None, None)._check_dep()
 
     def test_cyclic_resource(self):
         @self.s.Resource.r
-        def res1(cfg, meta, res2):
+        def res1(res2):
             pass
 
         @self.s.Resource.r
-        def res2(cfg, meta, res1):
+        def res2(res1):
             pass
 
         with self.assertRaises(RuntimeError):
@@ -46,15 +46,15 @@ class TestCheckDep(BaseTestCase):
 
     def test_cyclic_resource_with(self):
         @self.s.Resource.r
-        def res1(cfg, meta, res2):
+        def res1(res2):
             pass
 
         @self.s.Resource.r
-        def res2(cfg, meta, res1):
+        def res2(res1):
             pass
 
         @self.s.Item.r
-        def item(cfg, meta, res1):
+        def item(res1):
             pass
 
         with self.assertRaises(RuntimeError):
@@ -62,7 +62,7 @@ class TestCheckDep(BaseTestCase):
 
     def test_cyclic_self(self):
         @self.s.Resource.r
-        def res1(cfg, meta, res1):
+        def res1(res1):
             pass
 
         with self.assertRaises(RuntimeError):
@@ -70,7 +70,7 @@ class TestCheckDep(BaseTestCase):
 
     def test_bad_dep_name(self):
         @self.s.Resource.r
-        def res1(cfg, meta, bad):
+        def res1(bad):
             pass
 
         with self.assertRaises(RuntimeError):
@@ -78,22 +78,22 @@ class TestCheckDep(BaseTestCase):
 
     def test_scope(self):
         @self.s.Resource.r
-        def res1(cfg, meta):
+        def res1():
             pass
 
         @self.s.Resource.r
-        def res2(cfg, meta, id, res1):
+        def res2(id, res1):
             pass
 
         self.DataResolver(None, None)._check_dep()
 
     def test_bad_scope(self):
         @self.s.Resource.r
-        def res1(cfg, meta, id):
+        def res1(id):
             pass
 
         @self.s.Resource.r
-        def res2(cfg, meta, res1):
+        def res2(res1):
             pass
 
         with self.assertRaises(RuntimeError):
@@ -101,11 +101,11 @@ class TestCheckDep(BaseTestCase):
 
     def test_bad_scope_item(self):
         @self.s.Resource.r
-        def res1(cfg, meta, id):
+        def res1(id):
             pass
 
         @self.s.Item.r
-        def res2(cfg, meta, res1):
+        def res2(res1):
             pass
 
         with self.assertRaises(RuntimeError):
@@ -117,12 +117,12 @@ class TestCache(BaseTestCase):
         times = 0
 
         @self.s.Resource.r
-        def res1(cfg, meta):
+        def res1():
             nonlocal times
             times += 1
 
         @self.s.Item.r
-        def item1(cfg, meta, res1):
+        def item1(res1):
             pass
 
         resolver = self.DataResolver(None, None)
@@ -135,12 +135,12 @@ class TestCache(BaseTestCase):
         times = 0
 
         @self.s.Resource.r
-        def res1(cfg, meta, id):
+        def res1(id):
             nonlocal times
             times += 1
 
         @self.s.Item.r
-        def item1(cfg, meta, id, res1):
+        def item1(id, res1):
             pass
 
         resolver = self.DataResolver(None, None)
@@ -157,12 +157,12 @@ class TestCache(BaseTestCase):
         times = 0
 
         @self.s.Resource.r
-        def res1(cfg, meta, id):
+        def res1(id):
             nonlocal times
             times += 1
 
         @self.s.Item.r
-        def item1(cfg, meta, id, res1):
+        def item1(id, res1):
             pass
 
         resolver = self.DataResolver(None, None)
@@ -182,12 +182,12 @@ class TestCache(BaseTestCase):
         times = 0
 
         @self.s.Resource.r
-        def res1(cfg, meta):
+        def res1():
             nonlocal times
             times += 1
 
         @self.s.Item.r
-        def item1(cfg, meta, res1):
+        def item1(res1):
             pass
 
         resolver = self.DataResolver(None, None)
@@ -206,12 +206,12 @@ class TestCache(BaseTestCase):
         times = 0
 
         @self.s.Resource.r
-        def res1(cfg, meta):
+        def res1():
             nonlocal times
             times += 1
 
         @self.s.Item.r
-        def item1(cfg, meta, res1):
+        def item1(res1):
             pass
 
         resolver = self.DataResolver(None, meta=1)
@@ -227,25 +227,25 @@ class TestCache(BaseTestCase):
 class TestGetIdList(BaseTestCase):
     def test_basic(self):
         @self.s.Resource.r
-        def id_list(cfg, meta):
+        def id_list():
             return list(range(10))
 
         self.assertEqual(self.DataResolver(None, None).get_id_list(), list(range(10)))
 
     def test_basic_with_dep(self):
         @self.s.Resource.r
-        def nums(cfg, meta):
+        def nums(meta):
             return list(range(meta))
 
         @self.s.Resource.r
-        def id_list(cfg, meta, nums):
+        def id_list(nums):
             return nums
 
         self.assertEqual(self.DataResolver(None, 10).get_id_list(), list(range(10)))
 
     def test_bad_scope(self):
         @self.s.Resource.r
-        def id_list(cfg, meta, id):
+        def id_list(id):
             return list(range(10))
 
         with self.assertRaises(RuntimeError):

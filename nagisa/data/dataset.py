@@ -14,7 +14,7 @@ __all__ = [
     "get_dataset",
 ]
 
-item_keys = ConfigValue(f"{__name__}.item_keys", is_func=True)
+item_keys = ConfigValue(f"{__name__}.item_keys", func_spec=["cfg|c?", "meta|m?"])
 
 DatasetMeta = collections.namedtuple("DatasetMeta", ("name", "split"))
 

@@ -16,17 +16,16 @@ class TestGetDataset(BaseDatasetTestCase):
     def test_get_dataset(self):
         s = self.s
 
-
         s.item_keys.set(["img"])
 
         @s.Resource.r
-        @s.Resource.when(lambda _, m: m.split == "train")
-        def id_list(cfg, meta):
+        @s.Resource.when(lambda m: m.split == "train")
+        def id_list():
             return list(range(200))
 
         @s.Resource.r
-        @s.Resource.when(lambda _, m: m.split == "val")
-        def id_list(cfg, meta):
+        @s.Resource.when(lambda m: m.split == "val")
+        def id_list():
             return list(range(100))
 
         @s.Resource.r
@@ -38,7 +37,7 @@ class TestGetDataset(BaseDatasetTestCase):
         Image = namedtuple("Image", ["fn"])
 
         @s.Item.r
-        def img(cfg, meta, id, img_name):
+        def img(id, img_name):
             return Image(img_name)
 
         ds = s.get_dataset("dataset1", "train")
