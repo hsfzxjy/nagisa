@@ -1,6 +1,6 @@
 import ast
-from nagisa.primitive import typing
-from nagisa.primitive.malformed import Malformed
+from nagisa.core.primitive import typing
+from nagisa.core.primitive.malformed import Malformed
 
 
 def node_to_object(node):

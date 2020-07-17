@@ -1,7 +1,7 @@
 import contextlib
 from collections import deque
 
-from nagisa.misc.cache import ScopedCache, Scope
+from nagisa.core.misc.cache import ScopedCache, Scope
 
 from ._registries import Resource, Item
 

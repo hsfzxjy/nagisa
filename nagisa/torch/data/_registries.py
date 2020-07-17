@@ -2,9 +2,9 @@ import enum
 import inspect
 import collections
 from functools import partial
-from nagisa.misc.cache import Scope
-from nagisa.misc.registry import MultiEntryConditionalFunctionRegistry, Registry
-from nagisa.misc.functools import function_annotator
+from nagisa.core.misc.cache import Scope
+from nagisa.core.misc.registry import MultiEntryConditionalFunctionRegistry, Registry
+from nagisa.core.misc.functools import function_annotator
 
 __all__ = [
     "Resource",

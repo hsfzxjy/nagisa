@@ -7,10 +7,10 @@ import pathlib
 import logging
 
 from nagisa.core.state.scheme import SchemeNode
-from nagisa import primitive
-from nagisa.primitive import ast as prim_ast
-from nagisa.primitive.typing import str_to_object, cast, regularize_type
-from nagisa.io.path import resolve_until_exists
+from nagisa.core import primitive
+from nagisa.core.primitive import ast as prim_ast
+from nagisa.core.primitive.typing import str_to_object, cast, regularize_type
+from nagisa.core.misc.io import resolve_until_exists
 
 logger = logging.Logger(__name__)
 

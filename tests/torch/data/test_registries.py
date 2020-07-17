@@ -1,7 +1,7 @@
 import unittest
 
-from nagisa.data._registries import ResourceItemRegistry
-from nagisa.misc.cache import Scope
+from nagisa.torch.data._registries import ResourceItemRegistry
+from nagisa.core.misc.cache import Scope
 
 
 class TestRegisterAndSelect(unittest.TestCase):

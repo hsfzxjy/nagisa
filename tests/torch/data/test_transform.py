@@ -8,14 +8,14 @@ class BaseTestCase(unittest.TestCase):
 
         for n in list(
             filter(
-                lambda x: x.startswith("nagisa.data")
+                lambda x: x.startswith("nagisa.torch.data")
                 or x.startswith("nagisa.core.state"),
                 sys.modules,
             )
         ):
             del sys.modules[n]
 
-        from nagisa.data import shortcuts
+        from nagisa.torch.data import shortcuts
 
         self.s = shortcuts
 

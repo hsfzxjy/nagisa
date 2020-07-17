@@ -1,22 +1,58 @@
-import os
 import re
+import os
 import sys
-import errno
 import shutil
 import pathlib
+import logging
 import hashlib
-import zipfile
 import tempfile
+import traceback
 import warnings
 import http.cookiejar
 import urllib.request
+from typing import Optional
 from urllib.parse import urlparse, quote
 
-import torch.hub
-from tqdm import tqdm
+from nagisa.core.misc.registry import FunctionSelector
+from nagisa.core.misc.progressbar import tqdm
 
-from nagisa.io.path import resolve_until_exists
-from nagisa.misc.registry import FunctionSelector
+
+__all__ = [
+    "resolve_until_exists",
+    "URLOpener",
+    "download_url_to_file",
+    "prepare_resource",
+]
+
+logger = logging.Logger(__name__)
+
+
+def resolve_until_exists(
+    path: str, *, caller_level: int = -3
+) -> Optional[pathlib.Path]:
+    assert caller_level < 0
+
+    path = pathlib.Path(path)
+
+    if not path.is_absolute():
+        tb_list = traceback.extract_stack(limit=abs(caller_level))
+        if len(tb_list) < abs(caller_level):
+            raise ValueError(
+                "Caller level {} is too deep for current context.".format(caller_level)
+            )
+        caller_filename = pathlib.Path(tb_list[caller_level].filename)
+        if pathlib.Path(caller_filename).is_file():
+            path = pathlib.Path(caller_filename).parent / path
+        else:
+            logger.warn(
+                "{} is not a valid file. Use CWD as relative instead.".format(
+                    caller_filename
+                )
+            )
+            path = pathlib.Path.cwd() / path
+
+    return path if path.exists() else None
+
 
 URLOpener = FunctionSelector(
     f"{__name__}.URLOpener", func_spec=["url | u"], cond_spec=["url | u?"]
@@ -139,50 +175,3 @@ def prepare_resource(src, dst, progress=True, check_hash=False):
 
     return dst
 
-
-def load_state_dict(
-    location,
-    model_dir=None,
-    map_location=None,
-    progress=True,
-    check_hash=False,
-    return_filename=False,
-):
-    # Issue warning to move data if old env is set
-    if os.getenv("TORCH_MODEL_ZOO"):
-        warnings.warn(
-            "TORCH_MODEL_ZOO is deprecated, please use env TORCH_HOME instead"
-        )
-
-    if model_dir is None:
-        torch_home = torch.hub._get_torch_home()
-        model_dir = os.path.join(torch_home, "checkpoints")
-
-    try:
-        os.makedirs(model_dir)
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            # Directory already exists, ignore.
-            pass
-        else:
-            # Unexpected OSError, re-raise.
-            raise
-
-    cached_file = prepare_resource(
-        location, model_dir, progress=progress, check_hash=check_hash
-    )
-    if zipfile.is_zipfile(cached_file):
-        with zipfile.ZipFile(cached_file) as cached_zipfile:
-            members = cached_zipfile.infolist()
-            if len(members) != 1:
-                raise RuntimeError("Only one file(not dir) is allowed in the zipfile")
-            cached_zipfile.extractall(model_dir)
-            extraced_name = members[0].filename
-            cached_file = os.path.join(model_dir, extraced_name)
-
-    loaded = torch.load(cached_file, map_location=map_location)
-
-    if return_filename:
-        return loaded, cached_file
-
-    return cached_file

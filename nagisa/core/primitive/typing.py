@@ -10,7 +10,7 @@ else:
     _optional_base = typing._Union
 
 from collections import namedtuple
-from nagisa.primitive.malformed import Malformed
+from nagisa.core.primitive.malformed import Malformed
 
 __all__ = [
     "is_acceptable_type",

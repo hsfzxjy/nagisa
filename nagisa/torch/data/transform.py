@@ -1,5 +1,5 @@
-from nagisa.misc.cache import Cache
-from nagisa.misc.naming import camel_to_snake
+from nagisa.core.misc.cache import Cache
+from nagisa.core.misc.naming import camel_to_snake
 from nagisa.core.state.scheme import SchemeNode
 from nagisa.core.state.config import ConfigValue, ConfigNode
 

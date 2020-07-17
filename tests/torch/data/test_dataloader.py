@@ -2,16 +2,16 @@ import sys
 import torch
 import unittest
 
-from nagisa.misc.test import TorchTestCase
+from nagisa.core.misc.test import TorchTestCase
 
 
 class BaseDatasetTestCase(TorchTestCase):
     def setUp(self):
-        for n in list(filter(lambda x: x.startswith("nagisa.data"), sys.modules)):
+        for n in list(filter(lambda x: x.startswith("nagisa.torch.data"), sys.modules)):
             del sys.modules[n]
 
-        from nagisa.data import shortcuts as s
-        from nagisa.data.dataloader import DataLoader
+        from nagisa.torch.data import shortcuts as s
+        from nagisa.torch.data.dataloader import DataLoader
 
         self.s = s
 

@@ -6,8 +6,8 @@ import itertools
 from typing import Union, List, Tuple, Dict, Callable, Optional
 from collections import namedtuple
 
-from nagisa.misc import accessor
-from nagisa.misc.naming import isidentifier, isaccessor
+from nagisa.core.misc import accessor
+from nagisa.core.misc.naming import isidentifier, isaccessor
 
 
 __all__ = [

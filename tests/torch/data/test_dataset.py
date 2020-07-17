@@ -4,10 +4,10 @@ import unittest
 
 class BaseDatasetTestCase(unittest.TestCase):
     def setUp(self):
-        for n in list(filter(lambda x: x.startswith("nagisa.data"), sys.modules)):
+        for n in list(filter(lambda x: x.startswith("nagisa.torch.data"), sys.modules)):
             del sys.modules[n]
 
-        from nagisa.data import shortcuts
+        from nagisa.torch.data import shortcuts
 
         self.s = shortcuts
 
