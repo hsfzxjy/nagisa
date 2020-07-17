@@ -127,9 +127,14 @@ def prepare_resource(src, dst, progress=True, check_hash=False):
 
     if not os.path.exists(dst):
         sys.stderr.write('Downloading: "{}" to {}\n'.format(url, dst))
-        hash_prefix = (
-            torch.hub.HASH_REGEX.search(filename).group(1) if check_hash else None
-        )
+
+        if isinstance(check_hash, str):
+            hash_prefix = check_hash
+        else:
+            hash_prefix = (
+                torch.hub.HASH_REGEX.search(filename).group(1) if check_hash else None
+            )
+
         download_url_to_file(url, dst, hash_prefix, progress=progress)
 
     return dst
