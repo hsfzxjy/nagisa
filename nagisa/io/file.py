@@ -1,13 +1,21 @@
 import os
 import re
+import sys
+import errno
 import shutil
+import pathlib
 import hashlib
+import zipfile
 import tempfile
+import warnings
 import http.cookiejar
 import urllib.request
+from urllib.parse import urlparse, quote
 
+import torch.hub
 from tqdm import tqdm
 
+from nagisa.io.path import resolve_until_exists
 from nagisa.misc.registry import FunctionSelector
 
 URLOpener = FunctionSelector(
@@ -51,20 +59,6 @@ def default_opener(url):
 
 
 def download_url_to_file(url, dst, hash_prefix=None, progress=True):
-    r"""Download object at the given URL to a local path.
-
-    Args:
-        url (string): URL of the object to download
-        dst (string): Full path where object will be saved, e.g. `/tmp/temporary_file`
-        hash_prefix (string, optional): If not None, the SHA256 downloaded file should start with `hash_prefix`.
-            Default: None
-        progress (bool, optional): whether or not to display a progress bar to stderr
-            Default: True
-
-    Example:
-        >>> torch.hub.download_url_to_file('https://s3.amazonaws.com/pytorch/models/resnet18-5c106cde.pth', '/tmp/temporary_file')
-
-    """
     file_size = None
     # We use a different API for python2 since urllib(2) doesn't recognize the CA
     # certificates in older Python
@@ -118,3 +112,72 @@ def download_url_to_file(url, dst, hash_prefix=None, progress=True):
         if os.path.exists(f.name):
             os.remove(f.name)
 
+    return dst
+
+
+def prepare_resource(src, dst, progress=True, check_hash=False):
+    if os.path.isfile(src):
+        return src
+
+    url = src
+    filename = quote(url, safe="")
+
+    if os.path.isdir(dst):
+        dst = os.path.join(dst, filename)
+
+    if not os.path.exists(dst):
+        sys.stderr.write('Downloading: "{}" to {}\n'.format(url, dst))
+        hash_prefix = (
+            torch.hub.HASH_REGEX.search(filename).group(1) if check_hash else None
+        )
+        download_url_to_file(url, dst, hash_prefix, progress=progress)
+
+    return dst
+
+
+def load_state_dict(
+    location,
+    model_dir=None,
+    map_location=None,
+    progress=True,
+    check_hash=False,
+    return_filename=False,
+):
+    # Issue warning to move data if old env is set
+    if os.getenv("TORCH_MODEL_ZOO"):
+        warnings.warn(
+            "TORCH_MODEL_ZOO is deprecated, please use env TORCH_HOME instead"
+        )
+
+    if model_dir is None:
+        torch_home = torch.hub._get_torch_home()
+        model_dir = os.path.join(torch_home, "checkpoints")
+
+    try:
+        os.makedirs(model_dir)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            # Directory already exists, ignore.
+            pass
+        else:
+            # Unexpected OSError, re-raise.
+            raise
+
+    cached_file = prepare_resource(
+        location, model_dir, progress=progress, check_hash=check_hash
+    )
+    if zipfile.is_zipfile(cached_file):
+        with zipfile.ZipFile(cached_file) as cached_zipfile:
+            members = cached_zipfile.infolist()
+            if len(members) != 1:
+                raise RuntimeError("Only one file(not dir) is allowed in the zipfile")
+            cached_zipfile.extractall(model_dir)
+            extraced_name = members[0].filename
+            cached_file = os.path.join(model_dir, extraced_name)
+
+    loaded = torch.load(cached_file, map_location=map_location)
+
+    if return_filename:
+        return loaded, cached_file
+
+    return cached_file

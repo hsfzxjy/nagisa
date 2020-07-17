@@ -1,5 +1,5 @@
-test:
+ci:
 	python3 -m unittest discover -v -s tests
 
-local_test:
+test:
 	LOCAL=1 python3 -m unittest discover -v -s tests
