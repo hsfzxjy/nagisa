@@ -1,0 +1,11 @@
+set -euvx
+
+python3 -m pip install -r requirements/ci-base.txt
+
+if [ ${TORCH_VERSION} == "1.2" ]; then
+    IGNITE_VERSION=0.4rc0.post1
+else
+    IGNITE_VERSION=0.4.0.post1
+fi
+
+python3 -m pip install pytorch-ignite==${IGNITE_VERSION} torch==${TORCH_VERSION}

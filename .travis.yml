@@ -8,8 +8,14 @@ env:
   - TORCH_VERSION=1.3
   - TORCH_VERSION=1.4
   - TORCH_VERSION=1.5
+jobs:
+  exclude:
+    - python: "3.8"
+      env: TORCH_VERSION=1.2
+    - python: "3.8"
+      env: TORCH_VERSION=1.3
 install:
-  - python3 -m pip install -r requirements/ci-base.txt
+  - bash .travis.install
 script:
   - make ci
 cache:
