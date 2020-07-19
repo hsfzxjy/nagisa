@@ -4,13 +4,14 @@ from nagisa.core.misc import functools
 
 
 def _make_function(params):
-    func_code = compile(f"""def f({', '.join(params)}): pass""", "<string>", "exec")
+    func_code = compile(
+        f"""def f({', '.join(params)}): pass""", "<string>", "exec"
+    )
     return types.FunctionType(func_code.co_consts[0], {}, "f")
 
 
 class TestMatchParamsSpec(unittest.TestCase):
     def test_basic(self):
-        # fmt:off
         cases = [
             [
                 (["a", "b", "c"], ["a", "b", "c"]),
@@ -62,7 +63,11 @@ class TestMatchParamsSpec(unittest.TestCase):
             ],
             [
                 (["c", "b", "e", "f"], ["a?", "*", "b", ...]),
-                (["e", "f"], ["a", "_", "b", "__", "___"], ["_", "b", "__", "___"]),
+                (
+                    ["e", "f"],
+                    ["a", "_", "b", "__", "___"],
+                    ["_", "b", "__", "___"],
+                ),
             ],
             [
                 (["c", "e", "f"], ["*", "b?", ...]),
@@ -73,7 +78,6 @@ class TestMatchParamsSpec(unittest.TestCase):
                 (["bb", "b"], ["a", "b", "_", "__"], ["_", "__"]),
             ],
         ]
-        # fmt:on
 
         for (params, spec), (remaining, adapter_params, mapping) in cases:
             f = _make_function(params)
@@ -110,7 +114,8 @@ class TestMatchParamsSpec(unittest.TestCase):
         for params, spec in cases:
             f = _make_function(params)
             with self.assertRaises(
-                RuntimeError, msg=f"params = {params!r}, spec = {spec!r}"
+                    RuntimeError,
+                    msg=f"params = {params!r}, spec = {spec!r}",
             ):
                 functools.match_params_spec(spec, f, simple=True)
 
@@ -123,13 +128,25 @@ class TestMakeAdapter(unittest.TestCase):
 
         self.assertEqual(f([1, 2, 3], object()), (1, 2, 3))
 
-        @functools.make_adapter(["a", "b"], {"a": "a.0", "b": "a.1", "c": "a.2"})
+        @functools.make_adapter(
+            ["a", "b"], {
+                "a": "a.0",
+                "b": "a.1",
+                "c": "a.2"
+            }
+        )
         def f(a, b, c):
             return (a, b, c)
 
         self.assertEqual(f([1, 2, 3], object()), (1, 2, 3))
 
-        @functools.make_adapter(["a", "b"], (["a.0"], {"b": "a.1", "c": "a.2"}),)
+        @functools.make_adapter(
+            ["a", "b"],
+            (["a.0"], {
+                "b": "a.1",
+                "c": "a.2"
+            }),
+        )
         def f(a, b, c):
             return (a, b, c)
 
@@ -143,4 +160,3 @@ class TestAdaptParamsSpec(unittest.TestCase):
             return c, e, f, g, h
 
         self.assertEqual(f(1, 2, 3, 4, 5, 6), (1, 3, 4, 5, 6))
-

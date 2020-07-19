@@ -53,7 +53,12 @@ class Test_option_scan(unittest.TestCase):
 
     def test_scan(self):
         with mock_env(
-            "mod_1_foo_1", "42", "mod_1_foo_3", "bar", "mod_1_foo_4", "[True,False]",
+                "mod_1_foo_1",
+                "42",
+                "mod_1_foo_3",
+                "bar",
+                "mod_1_foo_4",
+                "[True,False]",
         ):
             envvar._registry.scan("envvar_case_1")
             self.assertEqual(

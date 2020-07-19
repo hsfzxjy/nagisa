@@ -6,13 +6,12 @@ class BaseTestCase(unittest.TestCase):
     def setUp(self):
         import sys
 
-        for n in list(
-            filter(
-                lambda x: x.startswith("nagisa.torch.data")
-                or x.startswith("nagisa.core.state"),
+        for n in list(filter(
+                lambda x: \
+                    x.startswith("nagisa.torch.data")
+                    or x.startswith("nagisa.core.state"),
                 sys.modules,
-            )
-        ):
+        )):
             del sys.modules[n]
 
         from nagisa.torch.data import shortcuts
@@ -208,4 +207,3 @@ class TestApply(BaseTestCase):
         result = self.s.apply_transform(None, None, {"num": -10})
         self.assertEqual(result, {"num": 100})
         self.assertEqual(times, 1)
-

@@ -98,4 +98,3 @@ class DataResolver(object):
     def new_scope(self):
         with self.__cache.new_scope():
             yield
-

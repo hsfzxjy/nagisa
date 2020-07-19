@@ -40,7 +40,10 @@ class ScopedCache(Cache):
     def set(self, key, value, scope=Scope.GLOBAL):
         key = self._encode_key(key)
         super().set(key, value)
-        stack_index = {Scope.GLOBAL: 0, Scope.LOCAL: -1,}[scope]
+        stack_index = {
+            Scope.GLOBAL: 0,
+            Scope.LOCAL: -1,
+        }[scope]
         self.__key_stack[stack_index].append(key)
 
     @contextlib.contextmanager
@@ -52,4 +55,3 @@ class ScopedCache(Cache):
         for key in self.__key_stack[-1]:
             del self._store[key]
         self.__key_stack.pop(-1)
-

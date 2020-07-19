@@ -2,7 +2,7 @@ import inspect
 import collections
 from torch.utils.data.dataset import Dataset as torch_Dataset
 
-from nagisa.core.state.config import ConfigNode, ConfigValue
+from nagisa.core.state.config import ConfigNode, ConfigValue, cfg_property
 
 from ._data_resolver import DataResolver
 from .transform import apply_transform
@@ -14,17 +14,21 @@ __all__ = [
     "get_dataset",
 ]
 
-item_keys = ConfigValue(f"{__name__}.item_keys", func_spec=["cfg|c?", "meta|m?"])
+item_keys = ConfigValue(
+    f"{__name__}.item_keys", func_spec=["cfg|c?", "meta|m?"]
+)
 
 DatasetMeta = collections.namedtuple("DatasetMeta", ("name", "split"))
 
 
 class Dataset(torch_Dataset):
     def __init__(self, cfg, name, split):
-        self.cfg = cfg
+        self._cfg = cfg
         self.meta = DatasetMeta(name=name, split=split)
         self.data_resolver = DataResolver(cfg, self.meta)
         self.id_list = self.data_resolver.get_id_list()
+
+    cfg = cfg_property
 
     def __len__(self):
         return len(self.id_list)
@@ -45,7 +49,4 @@ class Dataset(torch_Dataset):
 
 
 def get_dataset(name, split, cfg=None):
-    if cfg is None:
-        cfg = ConfigNode.instance(raise_exc=True)
-
     return Dataset(cfg, name, split)

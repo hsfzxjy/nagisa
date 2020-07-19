@@ -40,7 +40,8 @@ class _EnvvarRegistry:
         return cls.__instance
 
     def _parse_Call(self, node: ast.Call, func_names: [str]):
-        if not isinstance(node.func, ast.Name) or node.func.id not in func_names:
+        if (not isinstance(node.func, ast.Name)
+                or node.func.id not in func_names):
             return
 
         env_name = prim_ast.cast(node.args[0], str)
@@ -68,15 +69,23 @@ class _EnvvarRegistry:
 
         self._store = scheme_node
 
-    def scan(self, dirname=".", func_names=__acceptable_func_names, caller_level=-3):
+    def scan(
+        self,
+        dirname=".",
+        func_names=__acceptable_func_names,
+        caller_level=-3
+    ):
 
         if self._store is None:
-            raise RuntimeError("`scan()` should be called after `sync_with()`.")
+            raise RuntimeError(
+                "`scan()` should be called after `sync_with()`."
+            )
 
         start_dir = resolve_until_exists(dirname, caller_level=caller_level)
         if dirname is None:
             logger.warn(
-                "`dirname` {!r} resolved to nothing, scanning skipped.".format(dirname)
+                "`dirname` {!r} resolved to nothing, scanning skipped."
+                .format(dirname)
             )
             return
 
@@ -98,7 +107,9 @@ class _EnvvarRegistry:
                 env_value = object_from_envvar(name, T, default=None)
                 self._store.entry(
                     name,
-                    self._store.__class__(type_=typing.Optional[T], default=env_value),
+                    self._store.__class__(
+                        type_=typing.Optional[T], default=env_value
+                    ),
                 )
 
 

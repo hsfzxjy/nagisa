@@ -61,13 +61,19 @@ class ConfigNode(SchemeNode):
 
         return self
 
-    def merge_from_remainder(self, remainder, ignore_errors=False, ext_syntax=True):
+    def merge_from_remainder(
+        self, remainder, ignore_errors=False, ext_syntax=True
+    ):
         if not isinstance(remainder, list):
             raise TypeError(
-                "Expect `remainder` to be a list, got {!r}.".format(type(remainder))
+                "Expect `remainder` to be a list, got {!r}.".format(
+                    type(remainder)
+                )
             )
         if len(remainder) % 2 != 0:
-            raise ValueError("Expect `remainder` to have odd number of elements.")
+            raise ValueError(
+                "Expect `remainder` to have odd number of elements."
+            )
 
         self._merge_from_directives(
             zip(
@@ -80,7 +86,9 @@ class ConfigNode(SchemeNode):
         return self
 
     def track_envvar(self, dirname=".", func_names=()):
-        self.entry("ENVVAR", self.__class__(is_container=True, attributes=["w"]))
+        self.entry(
+            "ENVVAR", self.__class__(is_container=True, attributes=["w"])
+        )
         envvar._registry.sync_with(self.ENVVAR)
         envvar._registry.scan(dirname, caller_level=-4)
         return self
@@ -124,7 +132,7 @@ class ConfigValue(object):
         if self.__value is not self._Null:
             raise RuntimeError(
                 f"Cannot set value on {self!r} for more than once."
-            )            
+            )
 
         self.__value = self._wrap(value)
         return value
@@ -137,7 +145,7 @@ class ConfigValue(object):
         if self.__config_path is not None:
             raise RuntimeError(
                 f"Cannot set config path on {self!r} for more than once."
-            )            
+            )
         self.__config_path = path
 
     def value(self, *args, **kwargs):
@@ -154,6 +162,19 @@ class ConfigValue(object):
                 return value(*args, **kwargs)
             return value
         else:
-            raise RuntimeError(f"Neither config path nor value is set for {self!r}.")
+            raise RuntimeError(
+                f"Neither config path nor value is set for {self!r}."
+            )
 
     func = value
+
+
+def custom_or_default_cfg(cfg):
+    if cfg is None:
+        return ConfigNode.instance(raise_exc=True)
+    return cfg
+
+
+@property
+def cfg_property(self):
+    return custom_or_default_cfg(self._cfg)

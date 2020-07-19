@@ -25,8 +25,15 @@ __all__ = [
 ]
 
 _PRIMITIVE_TYPES = (int, float, bool, str)
-_ACCEPTED_TYPES = frozenset([*_PRIMITIVE_TYPES, *(List[T] for T in _PRIMITIVE_TYPES),])
-_ACCEPTED_TYPES = _ACCEPTED_TYPES | frozenset([Optional[T] for T in _ACCEPTED_TYPES])
+_ACCEPTED_TYPES = frozenset(
+    [
+        *_PRIMITIVE_TYPES,
+        *(List[T] for T in _PRIMITIVE_TYPES),
+    ]
+)
+_ACCEPTED_TYPES = _ACCEPTED_TYPES | frozenset(
+    [Optional[T] for T in _ACCEPTED_TYPES]
+)
 
 NoneType = type(None)
 
@@ -50,18 +57,15 @@ def _unwrap(T):
 def _is_nullable(T) -> bool:
 
     return (
-        isinstance(T, (_optional_base))
-        and T.__origin__ is typing.Union
-        and len(T.__args__) == 2
-        and type(None) in T.__args__
+        isinstance(T, (_optional_base)) and T.__origin__ is typing.Union
+        and len(T.__args__) == 2 and type(None) in T.__args__
     )
 
 
 def _is_list(T) -> bool:
     return (
         T in (List, list, Tuple, tuple)
-        or (_is_nullable(T) and _is_list(_unwrap(T)))
-        or (
+        or (_is_nullable(T) and _is_list(_unwrap(T))) or (
             isinstance(T, _generic_alias_base)
             and T.__origin__ in (List, list, Tuple, tuple)
         )
@@ -113,7 +117,8 @@ def infer_type(value, allow_empty_list=False):
         if len(value) == 0:
             if not allow_empty_list:
                 raise TypeError(
-                    "Cannot infer type for empty container {!r}.".format(value)
+                    "Cannot infer type for empty container {!r}."
+                    .format(value)
                 )
             return List
 
@@ -122,9 +127,8 @@ def infer_type(value, allow_empty_list=False):
             if not compatible_with(infer_type(x), base_type):
                 raise TypeError(
                     "Cannot infer type for container object {!r}, "
-                    "since the {}-th element {!r} has different type as previous.".format(
-                        value, i, x
-                    )
+                    "since the {}-th element {!r} has different type as previous."
+                    .format(value, i, x)
                 )
 
         return List[base_type]

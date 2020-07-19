@@ -7,7 +7,10 @@ from nagisa.core.misc.test import TorchTestCase
 
 class BaseDatasetTestCase(TorchTestCase):
     def setUp(self):
-        for n in list(filter(lambda x: x.startswith("nagisa.torch.data"), sys.modules)):
+        for n in list(filter(
+                lambda x: x.startswith("nagisa.torch.data"),
+                sys.modules,
+        )):
             del sys.modules[n]
 
         from nagisa.torch.data import shortcuts as s
@@ -27,7 +30,6 @@ class BaseDatasetTestCase(TorchTestCase):
 
         s.item_keys.set(["item1", "item2", "item3"])
         self.dataset = s.get_dataset("", "")
-
 
     def assertItemsEqual(self, items_seq1, items_seq2):
         self.assertEqual(len(items_seq1), len(items_seq2))
@@ -77,7 +79,11 @@ class TestDataLoader(BaseDatasetTestCase):
         for i in range(0, 100, chunk_size):
             items = torch.tensor([i + j for j in range(chunk_size)])
             expected.append(
-                {"item1": items, "item2": items.unsqueeze(-1), "item3": items,}
+                {
+                    "item1": items,
+                    "item2": items.unsqueeze(-1),
+                    "item3": items,
+                }
             )
         loader = s.DataLoader(None, self.dataset, batch_size=4)
         self.assertItemsEqual(list(loader), expected)
@@ -88,8 +94,13 @@ class TestDataLoader(BaseDatasetTestCase):
         for i in range(0, 100, chunk_size):
             items = torch.tensor([i + j for j in range(chunk_size)])
             expected.append(
-                {"item1": items, "item2": items, "item3": items,}
+                {
+                    "item1": items,
+                    "item2": items,
+                    "item3": items,
+                }
             )
 
-        self.assertItemsEqual(list(self.dataset.as_loader(batch_size=4)), expected)
-
+        self.assertItemsEqual(
+            list(self.dataset.as_loader(batch_size=4)), expected
+        )

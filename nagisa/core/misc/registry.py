@@ -2,15 +2,16 @@ import collections
 
 
 class Registry:
-    def __init__(self, name):
+    def __init__(self, name, unique=True):
         self._mapping = {}
         self.__name = name
+        self.__unique = unique
 
     def _check_value(self, key, value):
         return value
 
     def _register(self, key, value):
-        if key in self._mapping:
+        if key in self._mapping and self.__unique:
             raise KeyError(
                 f"Key {key!r} already registered in <Registry: {self.__name}>"
             )
@@ -38,6 +39,9 @@ class Registry:
 
     def __getitem__(self, key):
         return self._mapping[key]
+
+    def get(self, key, default=None):
+        return self._mapping.get(key, default)
 
 
 class Selector(object):
@@ -139,4 +143,3 @@ class FunctionSelector(FunctionValueMixin, Selector):
     def __init__(self, name, func_spec=[...], cond_spec=[...]):
         super().__init__(name, cond_spec)
         self._func_spec = func_spec
-

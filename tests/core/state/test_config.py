@@ -23,29 +23,61 @@ class Test_merge(unittest.TestCase):
             config = Config().merge_from_envvar().finalize()
         self.assertEqual(
             config.value_dict(),
-            {"foo_1": 1, "foo_2": 36, "sub": {"foo_3": "baz", "foo_4": [0]}},
+            {
+                "foo_1": 1,
+                "foo_2": 36,
+                "sub": {
+                    "foo_3": "baz",
+                    "foo_4": [0]
+                }
+            },
         )
 
         with mock_env("FOO2", "36"):
             config = Config().merge_from_envvar().finalize()
         self.assertEqual(
             config.value_dict(),
-            {"foo_1": 1, "foo_2": 36, "sub": {"foo_3": "bar", "foo_4": [0]}},
+            {
+                "foo_1": 1,
+                "foo_2": 36,
+                "sub": {
+                    "foo_3": "bar",
+                    "foo_4": [0]
+                }
+            },
         )
 
     def test_merge_from_args(self):
-        config = Config().merge_from_args(argparse.Namespace(foo4=[1])).finalize()
+        config = Config().merge_from_args(
+            argparse.Namespace(foo4=[1]),
+        ).finalize()
         self.assertEqual(
             config.value_dict(),
-            {"foo_1": 1, "foo_2": 42.0, "sub": {"foo_3": "bar", "foo_4": [1]}},
+            {
+                "foo_1": 1,
+                "foo_2": 42.0,
+                "sub": {
+                    "foo_3": "bar",
+                    "foo_4": [1]
+                }
+            },
         )
 
         config = (
-            Config().merge_from_args(argparse.Namespace(foo4=[1], foo2=36)).finalize()
+            Config().merge_from_args(
+                argparse.Namespace(foo4=[1], foo2=36),
+            ).finalize()
         )
         self.assertEqual(
             config.value_dict(),
-            {"foo_1": 1, "foo_2": 36, "sub": {"foo_3": "bar", "foo_4": [1]}},
+            {
+                "foo_1": 1,
+                "foo_2": 36,
+                "sub": {
+                    "foo_3": "bar",
+                    "foo_4": [1]
+                }
+            },
         )
 
     def test_merge_from_remainder(self):
@@ -67,7 +99,10 @@ class Test_merge(unittest.TestCase):
             {
                 "foo_1": 2,
                 "foo_2": 42.0,
-                "sub": {"foo_3": "remainder", "foo_4": [0, 1, 2]},
+                "sub": {
+                    "foo_3": "remainder",
+                    "foo_4": [0, 1, 2]
+                },
             },
         )
 
@@ -77,7 +112,9 @@ class TestSingleton(unittest.TestCase):
         import sys, importlib
 
         del sys.modules["nagisa.core.state.config"]
-        self.config_module = importlib.import_module("nagisa.core.state.config")
+        self.config_module = importlib.import_module(
+            "nagisa.core.state.config"
+        )
 
     def test_singleton(self):
         @self.config_module.ConfigNode.from_class(singleton=True)
@@ -99,4 +136,3 @@ class TestSingleton(unittest.TestCase):
         a = ConfigA()
         with self.assertRaises(RuntimeError):
             ConfigB()
-

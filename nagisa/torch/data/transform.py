@@ -1,7 +1,7 @@
 from nagisa.core.misc.cache import Cache
 from nagisa.core.misc.naming import camel_to_snake
 from nagisa.core.state.scheme import SchemeNode
-from nagisa.core.state.config import ConfigValue, ConfigNode
+from nagisa.core.state.config import ConfigValue, ConfigNode, cfg_property
 
 from ._registries import Transform
 
@@ -13,10 +13,14 @@ __all__ = [
 ]
 
 trans_seq = ConfigValue(
-    f"{__name__}.trans_seq", func_spec=["cfg|c?", "meta|m?"], default=lambda: []
+    f"{__name__}.trans_seq",
+    func_spec=["cfg|c?", "meta|m?"],
+    default=lambda: []
 )
 trans_kwargs = ConfigValue(
-    f"{__name__}.trans_kwargs", func_spec=["cfg|c?", "meta|m?"], default=lambda: {}
+    f"{__name__}.trans_kwargs",
+    func_spec=["cfg|c?", "meta|m?"],
+    default=lambda: {}
 )
 
 
@@ -32,20 +36,18 @@ class BaseTransform(object):
         Transform.register(key, cls)
 
     def __init__(self, *, cfg=None, meta=None, **kwargs):
-        self.__cfg = cfg
+        self._cfg = cfg
         self.meta = meta
-        kwargs = SchemeNode.from_class(self._kwargs_template)().merge_from_dict(kwargs)
+        kwargs = SchemeNode.from_class(
+            self._kwargs_template,
+        )().merge_from_dict(kwargs)
         self._check_kwargs(kwargs)
         self.kwargs = kwargs.finalize()
 
     def _check_kwargs(self, kwargs):
         pass
 
-    @property
-    def cfg(self):
-        if self.__cfg is not None:
-            return self.__cfg
-        return ConfigNode.instance(raise_exc=True)
+    cfg = cfg_property
 
     def _use_me(self, item_dict):
         return True
@@ -97,7 +99,9 @@ def apply_transform(cfg, meta, item_dict):
             else:
                 kwargs = {}
 
-            transforms.append(Transform[trans_key](cfg=cfg, meta=meta, **kwargs))
+            transforms.append(
+                Transform[trans_key](cfg=cfg, meta=meta, **kwargs)
+            )
 
         __cache.set(cache_key, transforms)
 
@@ -105,4 +109,3 @@ def apply_transform(cfg, meta, item_dict):
         item_dict = transform(item_dict)
 
     return item_dict
-

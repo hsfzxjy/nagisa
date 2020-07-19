@@ -25,7 +25,9 @@ def __append(directive, obj, name, value, attrsetter):
     target: list = getattr(obj, name, None)
     if not isinstance(target, list):
         raise TypeError(
-            "Cannot apply `{!r}` on {!r} type object.".format(directive, type(value))
+            "Cannot apply `{!r}` on {!r} type object.".format(
+                directive, type(value)
+            )
         )
 
     target.append(value)
@@ -36,7 +38,9 @@ def __prepend(directive, obj, name, value, attrsetter):
     target: list = getattr(obj, name, None)
     if not isinstance(target, list):
         raise TypeError(
-            "Cannot apply `{!r}` on {!r} type object.".format(directive, type(value))
+            "Cannot apply `{!r}` on {!r} type object.".format(
+                directive, type(value)
+            )
         )
 
     target.insert(0, value)
@@ -65,7 +69,12 @@ def _resolve_path(obj, dotted_path: str, attrchecker):
 
 
 def modify(
-    obj, directive: str, value, ext_syntax=True, attrsetter=setattr, attrchecker=hasattr
+    obj,
+    directive: str,
+    value,
+    ext_syntax=True,
+    attrsetter=setattr,
+    attrchecker=hasattr
 ):
     action = _Action.UPDATE
     dotted_path = directive
@@ -116,4 +125,3 @@ def get(obj, path: str, attrgetter=__default_attrgetter):
         obj = attrgetter(obj, name)
 
     return obj
-

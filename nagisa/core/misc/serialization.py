@@ -13,6 +13,7 @@ from nagisa.core.misc.io import resolve_until_exists
 
 BASE_KEY = "_BASE_"
 
+
 # Adapted from: https://github.com/facebookresearch/fvcore/blob/master/fvcore/common/config.py
 def load_yaml_with_base(
     filename: str, allow_unsafe: bool = False, caller_level: int = -3
@@ -30,7 +31,9 @@ def load_yaml_with_base(
     """
     fn = resolve_until_exists(filename, caller_level=caller_level)
     if filename is None:
-        raise ValueError(f"Cannot resolve path {filename!r} into an existing file.")
+        raise ValueError(
+            f"Cannot resolve path {filename!r} into an existing file."
+        )
 
     try:
         with fn.open("r") as f:
@@ -40,7 +43,8 @@ def load_yaml_with_base(
             raise
         logger.warning(
             "Loading config {} with yaml.unsafe_load. Your machine may "
-            "be at risk if the file contains malicious content.".format(filename)
+            "be at risk if the file contains malicious content."
+            .format(filename)
         )
         f.close()
         with fn.open("r") as f:
@@ -63,11 +67,12 @@ def load_yaml_with_base(
             # the path to base cfg is relative to the config file itself.
             base_cfg_file = fn.parent / base_cfg_file
         base_cfg = load_yaml_with_base(
-            str(base_cfg_file), allow_unsafe=allow_unsafe, caller_level=caller_level - 1
+            str(base_cfg_file),
+            allow_unsafe=allow_unsafe,
+            caller_level=caller_level - 1
         )
         del cfg[BASE_KEY]
 
         merge_a_into_b(cfg, base_cfg)
         return base_cfg
     return cfg
-

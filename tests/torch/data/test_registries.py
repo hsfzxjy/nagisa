@@ -95,4 +95,3 @@ class TestRegisterAndSelect(unittest.TestCase):
             pass
 
         self.assertEqual(foo.__deps__, ("dep1", "dep2", "dep3"))
-

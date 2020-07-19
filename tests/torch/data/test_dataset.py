@@ -4,7 +4,10 @@ import unittest
 
 class BaseDatasetTestCase(unittest.TestCase):
     def setUp(self):
-        for n in list(filter(lambda x: x.startswith("nagisa.torch.data"), sys.modules)):
+        for n in list(filter(
+                lambda x: x.startswith("nagisa.torch.data"),
+                sys.modules,
+        )):
             del sys.modules[n]
 
         from nagisa.torch.data import shortcuts
@@ -42,13 +45,16 @@ class TestGetDataset(BaseDatasetTestCase):
 
         ds = s.get_dataset("dataset1", "train")
         expected = [
-            {"img": Image(f"/path/dataset1/train/img_{x}.png")} for x in range(200)
+            {
+                "img": Image(f"/path/dataset1/train/img_{x}.png")
+            } for x in range(200)
         ]
         self.assertEqual(list(ds), expected)
 
         ds = s.get_dataset("dataset2", "val")
         expected = [
-            {"img": Image(f"/path/dataset2/val/img_{x}.png")} for x in range(100)
+            {
+                "img": Image(f"/path/dataset2/val/img_{x}.png")
+            } for x in range(100)
         ]
         self.assertEqual(list(ds), expected)
-

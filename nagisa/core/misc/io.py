@@ -16,7 +16,6 @@ from urllib.parse import urlparse, quote
 from nagisa.core.misc.registry import FunctionSelector
 from nagisa.core.misc.progressbar import tqdm
 
-
 __all__ = [
     "resolve_until_exists",
     "URLOpener",
@@ -28,7 +27,9 @@ logger = logging.Logger(__name__)
 
 
 def resolve_until_exists(
-    path: str, *, caller_level: int = -3
+    path: str,
+    *,
+    caller_level: int = -3,
 ) -> Optional[pathlib.Path]:
     assert caller_level < 0
 
@@ -38,16 +39,16 @@ def resolve_until_exists(
         tb_list = traceback.extract_stack(limit=abs(caller_level))
         if len(tb_list) < abs(caller_level):
             raise ValueError(
-                "Caller level {} is too deep for current context.".format(caller_level)
+                "Caller level {} is too deep for current context."
+                .format(caller_level)
             )
         caller_filename = pathlib.Path(tb_list[caller_level].filename)
         if pathlib.Path(caller_filename).is_file():
             path = pathlib.Path(caller_filename).parent / path
         else:
             logger.warn(
-                "{} is not a valid file. Use CWD as relative instead.".format(
-                    caller_filename
-                )
+                "{} is not a valid file. Use CWD as relative instead."
+                .format(caller_filename)
             )
             path = pathlib.Path.cwd() / path
 
@@ -71,7 +72,9 @@ def google_drive_opener(url):
     url = f"https://drive.google.com/uc?id={id}"
 
     cj = http.cookiejar.CookieJar()
-    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(cj)
+    )
 
     response = opener.open(url)
     content_type = response.getheader("Content-Type")
@@ -118,11 +121,11 @@ def download_url_to_file(url, dst, hash_prefix=None, progress=True):
         if hash_prefix is not None:
             sha256 = hashlib.sha256()
         with tqdm(
-            total=file_size,
-            disable=not progress,
-            unit="B",
-            unit_scale=True,
-            unit_divisor=1024,
+                total=file_size,
+                disable=not progress,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
         ) as pbar:
             while True:
                 buffer = u.read(8192)
@@ -136,7 +139,7 @@ def download_url_to_file(url, dst, hash_prefix=None, progress=True):
         f.close()
         if hash_prefix is not None:
             digest = sha256.hexdigest()
-            if digest[: len(hash_prefix)] != hash_prefix:
+            if digest[:len(hash_prefix)] != hash_prefix:
                 raise RuntimeError(
                     'invalid hash value (expected "{}", got "{}")'.format(
                         hash_prefix, digest
@@ -168,10 +171,10 @@ def prepare_resource(src, dst, progress=True, check_hash=False):
             hash_prefix = check_hash
         else:
             hash_prefix = (
-                torch.hub.HASH_REGEX.search(filename).group(1) if check_hash else None
+                torch.hub.HASH_REGEX.search(filename).group(1)
+                if check_hash else None
             )
 
         download_url_to_file(url, dst, hash_prefix, progress=progress)
 
     return dst
-

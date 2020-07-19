@@ -44,7 +44,9 @@ def load_state_dict(
         with zipfile.ZipFile(cached_file) as cached_zipfile:
             members = cached_zipfile.infolist()
             if len(members) != 1:
-                raise RuntimeError("Only one file(not dir) is allowed in the zipfile")
+                raise RuntimeError(
+                    "Only one file(not dir) is allowed in the zipfile"
+                )
             cached_zipfile.extractall(model_dir)
             extraced_name = members[0].filename
             cached_file = os.path.join(model_dir, extraced_name)

@@ -50,4 +50,3 @@ Resource = ResourceItemRegistry("Resource")
 Item = ResourceItemRegistry("Item")
 Transform = Registry("Transform")
 Collate = CollateRegistry("Collate")
-

@@ -102,9 +102,9 @@ def _serialize_to_tensor(data, group):
     if len(buffer) > 1024 ** 3:
         logger = logging.getLogger(__name__)
         logger.warning(
-            "Rank {} trying to all-gather {:.2f} GB of data on device {}".format(
-                get_rank(), len(buffer) / (1024 ** 3), device
-            )
+            "Rank {} trying to all-gather {:.2f} GB of data on device {}"
+            .format(get_rank(),
+                    len(buffer) / (1024 ** 3), device)
         )
     storage = torch.ByteStorage.from_buffer(buffer)
     tensor = torch.ByteTensor(storage).to(device=device)
@@ -121,7 +121,9 @@ def _pad_to_largest_tensor(tensor, group):
     assert (
         world_size >= 1
     ), "comm.gather/all_gather must be called from ranks within the given group!"
-    local_size = torch.tensor([tensor.numel()], dtype=torch.int64, device=tensor.device)
+    local_size = torch.tensor(
+        [tensor.numel()], dtype=torch.int64, device=tensor.device
+    )
     size_list = [
         torch.zeros([1], dtype=torch.int64, device=tensor.device)
         for _ in range(world_size)
@@ -135,7 +137,7 @@ def _pad_to_largest_tensor(tensor, group):
     # gathering tensors of different shapes
     if local_size != max_size:
         padding = torch.zeros(
-            (max_size - local_size,), dtype=torch.uint8, device=tensor.device
+            (max_size - local_size, ), dtype=torch.uint8, device=tensor.device
         )
         tensor = torch.cat((tensor, padding), dim=0)
     return size_list, tensor
@@ -165,7 +167,7 @@ def all_gather(data, group=None):
 
     # receiving Tensor from all ranks
     tensor_list = [
-        torch.empty((max_size,), dtype=torch.uint8, device=tensor.device)
+        torch.empty((max_size, ), dtype=torch.uint8, device=tensor.device)
         for _ in size_list
     ]
     dist.all_gather(tensor_list, tensor, group=group)
@@ -205,7 +207,7 @@ def gather(data, dst=0, group=None):
     if rank == dst:
         max_size = max(size_list)
         tensor_list = [
-            torch.empty((max_size,), dtype=torch.uint8, device=tensor.device)
+            torch.empty((max_size, ), dtype=torch.uint8, device=tensor.device)
             for _ in size_list
         ]
         dist.gather(tensor, tensor_list, dst=dst, group=group)
