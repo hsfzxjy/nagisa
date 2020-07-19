@@ -22,7 +22,7 @@ class BaseMeterGroupMeta(type):
 
         if scope_names is not None:
             scope_names = list(map(str.upper, scope_names))
-            scope_enum_class = enum.IntEnum(
+            scope_enum_class = enum.Enum(
                 "DefinedScopes",
                 scope_names,
                 type=_EnumMixin,
