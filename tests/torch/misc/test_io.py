@@ -60,7 +60,14 @@ class TestLoadStateDict(TorchTestCase):
             "tensor": torch.tensor(range(100), dtype=float),
             "string": "hello world",
         }
-        torch.save(data, "/tmp/a/test.pth")
+        torch.save(
+            data, "/tmp/a/test.pth",
+            **(
+                {
+                    '_use_new_zipfile_serialization': False
+                } if torch.__version__.startswith('1.6.') else {}
+            )
+        )
         data, self.dest = load_state_dict(
             "/tmp/a/test.pth",
             model_dir="/tmp/a/",
