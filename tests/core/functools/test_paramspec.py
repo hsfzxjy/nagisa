@@ -10,7 +10,7 @@ def _make_function(params):
     return types.FunctionType(func_code.co_consts[0], {}, "f")
 
 
-class TestMatchSpec(unittest.TestCase):
+class Test_match_spec(unittest.TestCase):
     def test_basic(self):
         cases = [
             [

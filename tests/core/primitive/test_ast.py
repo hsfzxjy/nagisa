@@ -8,7 +8,7 @@ def str_to_ast_node(stmt):
     return list(ast.walk(ast.parse(stmt)))[2]
 
 
-class TestParseType(unittest.TestCase):
+class Test_parse_type(unittest.TestCase):
     def test_basic(self):
         cases = [
             ("int", int),
@@ -38,7 +38,7 @@ class TestParseType(unittest.TestCase):
             )
 
 
-class TestNodeToObject(unittest.TestCase):
+class Test_node_to_object(unittest.TestCase):
     def test_basic(self):
         cases = [
             ("42", 42),

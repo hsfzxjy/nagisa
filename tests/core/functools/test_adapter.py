@@ -10,7 +10,7 @@ def _make_function(params):
     return types.FunctionType(func_code.co_consts[0], {}, "f")
 
 
-class TestMakeAdapter(unittest.TestCase):
+class Test_adapt(unittest.TestCase):
     def test_basic(self):
         @functools.adapt(["a", "b"], args=["a.0", "a.1", "a.2"])
         def f(a, b, c):
@@ -44,7 +44,7 @@ class TestMakeAdapter(unittest.TestCase):
         self.assertEqual(f([1, 2, 3], object()), (1, 2, 3))
 
 
-class TestAdaptParamsSpec(unittest.TestCase):
+class Test_adapt_spec(unittest.TestCase):
     def test_basic(self):
         @functools.adapt_spec(["c", "d?", "*", ...])
         def f(c, e, f, g, h):
