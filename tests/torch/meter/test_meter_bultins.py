@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 from nagisa.torch.meter.meter_builtins import Accumulation, Avg
-from nagisa.core.misc.test import TorchTestCase
+from nagisa.torch.misc.test import TorchTestCase
 
 t = torch.tensor
 a = np.array

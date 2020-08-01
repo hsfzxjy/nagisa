@@ -3,7 +3,7 @@ import unittest
 
 import torch
 
-from nagisa.core.misc.test import TorchTestCase
+from nagisa.torch.misc.test import TorchTestCase
 from nagisa.core.misc.io import download_url_to_file, prepare_resource
 from nagisa.torch.misc.io import load_state_dict
 

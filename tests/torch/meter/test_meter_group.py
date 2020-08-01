@@ -2,7 +2,7 @@ import unittest
 
 import torch
 
-from nagisa.core.misc.test import TorchTestCase
+from nagisa.torch.misc.test import TorchTestCase
 
 t = torch.tensor
 

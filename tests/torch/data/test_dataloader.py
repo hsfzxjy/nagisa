@@ -2,7 +2,7 @@ import sys
 import torch
 import unittest
 
-from nagisa.core.misc.test import TorchTestCase
+from nagisa.torch.misc.test import TorchTestCase
 
 
 class BaseDatasetTestCase(TorchTestCase):
