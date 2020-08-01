@@ -111,7 +111,7 @@ class TestSingleton(unittest.TestCase):
     def setUp(self):
         import sys, importlib
 
-        del sys.modules["nagisa.core.state.config"]
+        sys.modules.pop("nagisa.core.state.config", None)
         self.config_module = importlib.import_module(
             "nagisa.core.state.config"
         )

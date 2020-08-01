@@ -12,7 +12,7 @@ from nagisa.core.primitive import ast as prim_ast
 from nagisa.core.primitive.typing import str_to_object, cast, regularize_type
 from nagisa.core.misc.io import resolve_until_exists
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def object_from_envvar(name, T, default=None):

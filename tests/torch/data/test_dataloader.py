@@ -29,7 +29,7 @@ class BaseDatasetTestCase(TorchTestCase):
             return id
 
         s.item_keys.set(["item1", "item2", "item3"])
-        self.dataset = s.get_dataset("", "")
+        self.dataset = s.get_dataset("", "", cfg="mock")
 
     def assertItemsEqual(self, items_seq1, items_seq2):
         self.assertEqual(len(items_seq1), len(items_seq2))
@@ -64,7 +64,7 @@ class TestDataLoader(BaseDatasetTestCase):
                     "item3": items.unsqueeze(-1).unsqueeze(-1),
                 }
             )
-        loader = s.DataLoader(None, self.dataset, batch_size=4)
+        loader = s.DataLoader("mock", self.dataset, batch_size=4)
         self.assertItemsEqual(list(loader), expected)
 
     def test_dataloader_torch_default_collate(self):
@@ -85,7 +85,7 @@ class TestDataLoader(BaseDatasetTestCase):
                     "item3": items,
                 }
             )
-        loader = s.DataLoader(None, self.dataset, batch_size=4)
+        loader = s.DataLoader("mock", self.dataset, batch_size=4)
         self.assertItemsEqual(list(loader), expected)
 
     def test_dataset_as_loader(self):

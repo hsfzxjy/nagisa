@@ -1,58 +1,124 @@
 import re
 import os
 import sys
+import math
 import shutil
 import pathlib
 import logging
 import hashlib
 import tempfile
-import traceback
 import warnings
+import traceback
+import functools
 import http.cookiejar
 import urllib.request
-from typing import Optional
 from urllib.parse import urlparse, quote
+from typing import Optional, Union, Callable
 
-from nagisa.core.misc.registry import FunctionSelector
 from nagisa.core.misc.progressbar import tqdm
+from nagisa.core.misc.registry import FunctionSelector
 
 __all__ = [
+    "resolve",
+    "resolve_until",
     "resolve_until_exists",
     "URLOpener",
     "download_url_to_file",
     "prepare_resource",
 ]
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
+
+NOT_NAGISA = float('inf')
 
 
-def resolve_until_exists(
-    path: str,
-    *,
-    caller_level: int = -3,
+@functools.lru_cache()
+def nagisa_root_dir() -> pathlib.Path:
+    return pathlib.Path(__file__).absolute().parent.parent.parent
+
+
+def _resolve_path_based_on_caller(
+    path: Union[str, pathlib.Path],
+    caller_level: Union[int, float] = NOT_NAGISA
 ) -> Optional[pathlib.Path]:
-    assert caller_level < 0
+    tb_list = traceback.extract_stack()
+    if math.isfinite(caller_level):
+        assert isinstance(caller_level, int) and caller_level < 0
+        frame = tb_list[caller_level]
+    else:
+        root_dir = nagisa_root_dir
+        for frame in tb_list[::-1]:
+            if not frame.filename.startswith(root_dir):
+                break
+        else:
+            return None
 
+    return pathlib.Path(frame.filename).parent / path
+
+
+def _resolve_path_based_on_cwd(path: Union[str, pathlib.Path]) -> pathlib.Path:
+    return pathlib.Path.cwd() / path
+
+
+_DEFAULT_RESOLVING_ORDER = (
+    'caller',
+    'cwd',
+)
+
+
+def resolve_until(
+    path: Union[str, pathlib.Path],
+    *,
+    condition: Callable = pathlib.Path.exists,
+    order: tuple = _DEFAULT_RESOLVING_ORDER,
+    caller_level: Union[int, float] = NOT_NAGISA,
+) -> Optional[pathlib.Path]:
     path = pathlib.Path(path)
 
     if not path.is_absolute():
-        tb_list = traceback.extract_stack(limit=abs(caller_level))
-        if len(tb_list) < abs(caller_level):
-            raise ValueError(
-                "Caller level {} is too deep for current context."
-                .format(caller_level)
-            )
-        caller_filename = pathlib.Path(tb_list[caller_level].filename)
-        if pathlib.Path(caller_filename).is_file():
-            path = pathlib.Path(caller_filename).parent / path
-        else:
-            logger.warn(
-                "{} is not a valid file. Use CWD as relative instead."
-                .format(caller_filename)
-            )
-            path = pathlib.Path.cwd() / path
+        for method in order:
+            if method == 'caller':
+                path = _resolve_path_based_on_caller(
+                    path,
+                    caller_level=caller_level - 1,
+                )
+            elif method == 'cwd':
+                path = _resolve_path_based_on_cwd(path)
+            else:
+                raise RuntimeError
 
-    return path if path.exists() else None
+            if path is not None and condition(path):
+                return path
+
+    return path if path is not None and condition(path) else None
+
+
+def resolve_until_exists(
+    path: Union[str, pathlib.Path],
+    *,
+    order: tuple = _DEFAULT_RESOLVING_ORDER,
+    caller_level: Union[int, float] = NOT_NAGISA,
+) -> Optional[pathlib.Path]:
+    return resolve_until(
+        path=path,
+        condition=pathlib.Path.exists,
+        order=order,
+        caller_level=caller_level - 1,
+    )
+
+
+def resolve(
+    path: Union[str, pathlib.Path],
+    *,
+    method: str,
+    caller_level: Union[int, float] = NOT_NAGISA,
+):
+    return resolve_until(
+        path,
+        order=(method, ),
+        condition=lambda _: True,
+        caller_level=caller_level - 1,
+    )
 
 
 URLOpener = FunctionSelector(
