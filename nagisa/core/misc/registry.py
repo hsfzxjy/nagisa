@@ -1,4 +1,5 @@
 import collections
+from nagisa.core.functools import adapt_spec, make_annotator
 
 
 class Registry:
@@ -51,9 +52,7 @@ class Selector(object):
         self._cond_spec = cond_spec
 
     def _register(self, cond, value):
-        from .functools import adapt_params_spec
-
-        key = adapt_params_spec(self._cond_spec, cond)
+        key = adapt_spec(self._cond_spec, cond)
         value = self._check_value(key, value)
         self._mapping.append((key, value))
         return value
@@ -82,13 +81,11 @@ class FunctionValueMixin(object):
     _function_spec = [...]
 
     def _check_value(self, key, f):
-        from .functools import adapt_params_spec
-
         spec = self._function_spec
         if getattr(f, "__is_adapter__", False):
             return f
 
-        return adapt_params_spec(self._function_spec, f, preserve_meta=True)
+        return adapt_spec(self._function_spec, f, preserve_meta=True)
 
 
 class FunctionRegistry(FunctionValueMixin, Registry):
@@ -121,9 +118,7 @@ class MultiEntryConditionalFunctionRegistry(MultiEntryFunctionRegistry):
 
     @classmethod
     def when(cls, f):
-        from .functools import function_annotator
-
-        return function_annotator(
+        return make_annotator(
             f, cls._when_spec, "__when__", list, _when_annotator_fn
         )
 

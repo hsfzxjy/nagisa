@@ -5,7 +5,7 @@ from weakref import WeakSet
 from types import FunctionType
 
 from nagisa.core.state.config import cfg_property
-from nagisa.core.misc.functools import make_adapter, make_function
+from nagisa.core.functools import adapt, make_function
 from .meter_base import build_meter
 from ._registries import MeterRegistry
 
@@ -35,7 +35,7 @@ class BaseMeterGroupMeta(type):
                 namespace[func_name] = make_function(
                     func_name,
                     f"""
-                    def f(self):
+                    def {func_name}(self):
                         self.reset(self.Scope.{scope_name})
                     """,
                 )
@@ -48,7 +48,7 @@ class BaseMeterGroupMeta(type):
                     namespace[func_name] = make_function(
                         func_name,
                         f"""
-                        def f(self):
+                        def {func_name}(self):
                             return self.compute("{group_name}")
                         """,
                     )
@@ -84,7 +84,7 @@ class BaseMeterGroup(metaclass=BaseMeterGroupMeta):
         del self.groups[group_name]
         return self
 
-    def add_group(self, group_name, param_names, spec):
+    def add_group(self, group_name, signature, spec):
         if self.has_group(group_name):
             assert spec is None or set(spec) == set(self.groups)
             return
@@ -111,7 +111,12 @@ class BaseMeterGroup(metaclass=BaseMeterGroupMeta):
                 init, mapping, scope = spec_item
 
             if mapping is ...:
-                mapping = param_names
+                mapping = {'args': signature}
+            elif isinstance(mapping, list):
+                mapping = {'args': mapping}
+            elif (isinstance(mapping, dict)
+                  and not set(mapping).issubset({'args', 'kwargs'})):
+                mapping = {'kwargs': mapping}
 
             assert isinstance(init, _meter_initializer_types)
             if isinstance(init, tuple):
@@ -121,9 +126,7 @@ class BaseMeterGroup(metaclass=BaseMeterGroupMeta):
                 init_args = ()
 
             meter = build_meter(meter_cls, init_args)
-            meter.adapted_update = make_adapter(
-                param_names, mapping, meter.update
-            )
+            meter.adapted_update = adapt(signature, meter.update, **mapping)
             self._define_scope(meter, scope)
             meters[meter_key] = meter
 

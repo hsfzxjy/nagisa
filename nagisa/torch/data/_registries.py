@@ -4,7 +4,6 @@ import collections
 from functools import partial
 from nagisa.core.misc.cache import Scope
 from nagisa.core.misc.registry import MultiEntryConditionalFunctionRegistry, Registry
-from nagisa.core.misc.functools import function_annotator
 
 __all__ = [
     "Resource",

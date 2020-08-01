@@ -2,7 +2,7 @@ import functools
 import argparse
 from nagisa.core.state import envvar
 from nagisa.core.state.scheme import SchemeNode
-from nagisa.core.misc.functools import adapt_params_spec
+from nagisa.core.functools import adapt_spec
 from nagisa.core.primitive.typing import cast, str_to_object, Malformed
 
 
@@ -114,7 +114,7 @@ class ConfigValue(object):
 
     def _wrap(self, value):
         if callable(value) and self.__func_spec is not None:
-            return adapt_params_spec(self.__func_spec, value)
+            return adapt_spec(self.__func_spec, value)
         return value
 
     def __init__(self, name, func_spec=None, default=_Null):

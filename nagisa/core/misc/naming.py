@@ -12,7 +12,6 @@ def isidentifier(name):
 
 
 def isaccessor(name):
-
     return isinstance(name, str) and all(
         x.isidentifier() or x.isdigit() for x in name.split(".")
     )
