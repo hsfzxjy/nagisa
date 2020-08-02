@@ -2,9 +2,10 @@ import weakref
 import inspect
 import collections
 from typing import List, Any
-from nagisa.core.primitive.typing import *
 from nagisa.core.misc import accessor
-from nagisa.core.misc.serialization import load_yaml_with_base
+from nagisa.core.primitive.typing import *
+from nagisa.core.primitive.proxy import proxy
+from nagisa.core.misc.serialization import load_yaml_with_base, dump_yaml
 
 
 class NodeMeta:
@@ -79,19 +80,21 @@ class SchemeNode:
             elif type_ is None:
                 final_type = infer_type(default)
             else:
-                inferred_type = infer_type(default)
-                assert compatible_with(
-                    inferred_type, type_
-                ), "Type of `{!r}` is `{!r}`, which could not match with `type_` {!r}.".format(
-                    default, inferred_type, type_
-                )
+                assert check_type(
+                    default, type_
+                ), f"Value {default!r} is incompatible with type {type_!r}"
                 final_type = type_
             assert is_acceptable_type(
                 final_type
-            ), "Type {!r} is not acceptable.".format(final_type)
+            ), f"Type {final_type!r} is not acceptable"
             if default is None:
                 default = get_default_value(final_type)
-            self._value = cast(default, final_type)
+            self._value = proxy(
+                cast(default, final_type),
+                T=final_type,
+                mutable=True,
+                host=self,
+            )
         else:
             self._alias_entries = dict()
             self._entries = dict()
@@ -288,7 +291,16 @@ class SchemeNode:
                     f"Cannot update {host._meta.type!r} type entry {host.dotted_path()!r} with value {obj!r}."
                 )
 
-            host._value = cast(obj, host._meta.type)
+            host._value = proxy(
+                cast(obj, host._meta.type),
+                T=host._meta.type,
+                mutable=host.mutable,
+                host=host,
+            )
+
+    @property
+    def mutable(self):
+        return not self._finalized or self._meta.attributes.writable
 
     def dotted_path(self):
         entry = self
@@ -316,6 +328,8 @@ class SchemeNode:
     def finalize(self):
         if not self._meta.is_container:
             self._finalized = True
+            if hasattr(self._value, 'mutable'):
+                self._value.mutable(self._meta.attributes.writable)
             return self
 
         if self._finalized:
@@ -374,6 +388,8 @@ class SchemeNode:
 
     def value_dict(self):
         if not self._meta.is_container:
+            if hasattr(self._value, 'as_primitive'):
+                return self._value.as_primitive()
             return self._value
 
         dct = {}
@@ -399,6 +415,10 @@ class SchemeNode:
     def merge_from_file(self, filename: str):
         dct = load_yaml_with_base(filename, caller_level=-4)
         self.merge_from_dict(dct)
+        return self
+
+    def dump(self, output):
+        dump_yaml(self.value_dict(), output)
         return self
 
     def _merge_from_directives(self, directives, ext_syntax=True):

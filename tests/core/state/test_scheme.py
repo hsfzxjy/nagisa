@@ -1,3 +1,4 @@
+import os
 import unittest
 from nagisa.core.state import scheme
 
@@ -77,16 +78,18 @@ class TestInit(unittest.TestCase):
         for value, T in cases:
             with self.assertRaises(
                     AssertionError,
-                    msg="`SchemeNode({}, {}) should fail.".format(value, T)):
+                    msg="`SchemeNode({}, {}) should fail.".format(value, T),
+            ):
                 scheme.SchemeNode(default=value, type_=T)
 
         cases = [
-            [(), scheme.List[str]],
+            [(1, ), scheme.List[str]],
         ]
         for value, T in cases:
             with self.assertRaises(
-                    TypeError, msg="`SchemeNode({}, {}) should fail.".format(
-                        value, T)):
+                    AssertionError,
+                    msg="`SchemeNode({}, {}) should fail.".format(value, T),
+            ):
                 scheme.SchemeNode(default=value, type_=T)
 
 
@@ -490,6 +493,94 @@ class TestMerge(unittest.TestCase):
         with self.assertRaises(TypeError):
             cfg = self.Config().merge_from_file("yaml_example/a/b.yaml"
                                                 ).finalize()
+
+
+class Test_dump(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.temp_fd, self.temp_file = tempfile.mkstemp(suffix='.yml')
+
+    def tearDown(self):
+        os.close(self.temp_fd)
+        os.remove(self.temp_file)
+
+    def _file_content(self):
+        with open(self.temp_file) as f:
+            return f.read()
+
+    expected_content = '\n'.join(
+        [
+            'a: 1',
+            'b: false',
+            'c: []',
+            'd:',
+            '  e: 4.2',
+            '',
+        ]
+    )
+
+    @scheme.SchemeNode.from_class
+    class Config:
+        a = 1
+        b = False
+        c: [str] = []
+
+        class d:
+            e = 4.2
+
+    def test_dump_to_filename(self):
+        self.Config().dump(self.temp_file)
+        self.assertEqual(self._file_content(), self.expected_content)
+
+    def test_dump_to_file_object(self):
+        fobj = os.fdopen(self.temp_fd, 'w+', closefd=False)
+        self.Config().dump(fobj)
+        self.assertEqual(self._file_content(), self.expected_content)
+        fobj.seek(0)
+        self.assertEqual(fobj.read(), self.expected_content)
+
+    def test_dump_to_stringio(self):
+        import io
+        fobj = io.StringIO()
+        self.Config().dump(fobj)
+        fobj.seek(0)
+        self.assertEqual(fobj.read(), self.expected_content)
+
+
+class TestListValue(unittest.TestCase):
+    def test_independent_list(self):
+        @scheme.SchemeNode.from_class
+        class Config:
+            lst: [[int], 'w'] = [0]
+
+        cfg = Config().finalize()
+        cfg.lst.append(1)
+        self.assertEqual(cfg.lst, [0, 1])
+        cfg = Config().finalize()
+        cfg.lst.append(1)
+        self.assertEqual(cfg.lst, [0, 1])
+
+    def test_list_mutability(self):
+        @scheme.SchemeNode.from_class
+        class Config:
+            lst: [int] = [0]
+
+        cfg = Config()
+        cfg.lst.append(1)
+        self.assertEqual(cfg.lst, [0, 1])
+        cfg.finalize()
+        self.assertRaises(RuntimeError, cfg.lst.append, 1)
+        self.assertRaises(RuntimeError, cfg.lst.insert, 1, 1)
+
+        @scheme.SchemeNode.from_class
+        class Config:
+            lst: [[int], 'w'] = [0]
+
+        cfg = Config().finalize()
+        cfg.lst.append(1)
+        self.assertEqual(cfg.lst, [0, 1])
+        self.assertRaises(TypeError, cfg.lst.append, "foo")
+        self.assertRaises(TypeError, cfg.lst.extend, ["foo"])
 
 
 class TestSingleton(unittest.TestCase):

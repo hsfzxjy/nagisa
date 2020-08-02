@@ -8,6 +8,7 @@ __all__ = [
     'make_annotator',
     'make_function',
     'emulate',
+    'wraps',
     'decorative',
 ]
 
@@ -66,6 +67,19 @@ def emulate(
         wrapped,
         assigned=assigned +
         ('__signature__', '__defaults__', '__kwdefaults__'),
+        updated=updated,
+    )
+
+
+def wraps(
+    wrapped: Callable,
+    assigned=functools.WRAPPER_ASSIGNMENTS,
+    updated=functools.WRAPPER_UPDATES,
+) -> Callable:
+    return functools.partial(
+        emulate,
+        wrapped=wrapped,
+        assigned=assigned,
         updated=updated,
     )
 

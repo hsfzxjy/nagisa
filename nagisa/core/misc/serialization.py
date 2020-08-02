@@ -9,7 +9,7 @@ try:
 except ModuleNotFoundError:
     logger.warn("Library `PyYAML` not found.")
 
-from nagisa.core.misc.io import resolve_until_exists
+from nagisa.core.misc.io import resolve, resolve_until_exists
 
 BASE_KEY = "_BASE_"
 
@@ -76,3 +76,15 @@ def load_yaml_with_base(
         merge_a_into_b(cfg, base_cfg)
         return base_cfg
     return cfg
+
+
+def dump_yaml(obj, output):
+    need_close = False
+    if isinstance(output, (str, Path)):
+        output = resolve(output, method='cwd').open('w')
+        need_close = True
+    try:
+        yaml.dump(obj, output, default_flow_style=False)
+    finally:
+        if need_close:
+            output.close()
