@@ -368,7 +368,7 @@ class SchemeNode:
         return self
 
     def merge_from_file(self, filename: str):
-        dct = load_yaml_with_base(filename, caller_level=-4)
+        dct = load_yaml_with_base(filename, caller_level=-2)
         self.merge_from_dict(dct)
         return self
 

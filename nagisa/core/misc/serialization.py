@@ -15,7 +15,7 @@ BASE_KEY = "_BASE_"
 
 
 # Adapted from: https://github.com/facebookresearch/fvcore/blob/master/fvcore/common/config.py
-def load_yaml_with_base(filename: str, allow_unsafe: bool = False, caller_level: int = -3) -> None:
+def load_yaml_with_base(filename: str, allow_unsafe: bool = False, caller_level: int = -1) -> None:
     """
     Just like `yaml.load(open(filename))`, but inherit attributes from its
         `_BASE_`.
@@ -27,7 +27,7 @@ def load_yaml_with_base(filename: str, allow_unsafe: bool = False, caller_level:
     Returns:
         (dict): the loaded yaml
     """
-    fn = resolve_until_exists(filename, caller_level=caller_level)
+    fn = resolve_until_exists(filename, caller_level=caller_level - 1)
     if filename is None:
         raise ValueError(f"Cannot resolve path {filename!r} into an existing file.")
 

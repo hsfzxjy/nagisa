@@ -44,7 +44,8 @@ def _resolve_path_based_on_caller(
     tb_list = traceback.extract_stack()
     if math.isfinite(caller_level):
         assert isinstance(caller_level, int) and caller_level < 0
-        frame = tb_list[caller_level]
+        frame = tb_list[caller_level - 1]
+        print(frame)
     else:
         root_dir = nagisa_root_dir
         for frame in tb_list[::-1]:

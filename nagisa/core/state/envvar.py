@@ -68,13 +68,13 @@ class _EnvvarRegistry:
 
         self._store = scheme_node
 
-    def scan(self, dirname=".", func_names=__acceptable_func_names, caller_level=-2):
+    def scan(self, dirname=".", func_names=__acceptable_func_names, caller_level=-1):
 
         if self._store is None:
             raise RuntimeError("`scan()` should be called after `sync_with()`.")
 
         start_dir = resolve_until_exists(dirname, caller_level=caller_level - 1)
-        if dirname is None:
+        if start_dir is None:
             logger.warn("`dirname` {!r} resolved to nothing, scanning skipped.".format(dirname))
             return
 
