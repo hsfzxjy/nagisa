@@ -1,6 +1,5 @@
 import ast
 import unittest
-from nagisa.core.primitive.typing import List
 from nagisa.core.primitive import ast as prim_ast
 
 
@@ -15,10 +14,10 @@ class Test_parse_type(unittest.TestCase):
             ("float", float),
             ("str", str),
             ("bool", bool),
-            ("[str]", List[str]),
-            ("[int]", List[int]),
-            ("[bool]", List[bool]),
-            ("[float]", List[float]),
+            ("[str]", [str]),
+            ("[int]", [int]),
+            ("[bool]", [bool]),
+            ("[float]", [float]),
         ]
 
         for stmt, target in cases:

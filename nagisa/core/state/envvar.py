@@ -9,7 +9,7 @@ import logging
 from nagisa.core.state.scheme import SchemeNode
 from nagisa.core import primitive
 from nagisa.core.primitive import ast as prim_ast
-from nagisa.core.primitive.typing import str_to_object, cast, regularize_type
+from nagisa.core.primitive.typing import str_to_object, cast
 from nagisa.core.misc.io import resolve_until_exists
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ class _EnvvarRegistry:
         self,
         dirname=".",
         func_names=__acceptable_func_names,
-        caller_level=-3
+        caller_level=-2
     ):
 
         if self._store is None:
@@ -81,7 +81,9 @@ class _EnvvarRegistry:
                 "`scan()` should be called after `sync_with()`."
             )
 
-        start_dir = resolve_until_exists(dirname, caller_level=caller_level)
+        start_dir = resolve_until_exists(
+            dirname, caller_level=caller_level - 1
+        )
         if dirname is None:
             logger.warn(
                 "`dirname` {!r} resolved to nothing, scanning skipped."
@@ -107,9 +109,7 @@ class _EnvvarRegistry:
                 env_value = object_from_envvar(name, T, default=None)
                 self._store.entry(
                     name,
-                    self._store.__class__(
-                        type_=typing.Optional[T], default=env_value
-                    ),
+                    self._store.__class__(type_=(T, None), default=env_value),
                 )
 
 

@@ -1,15 +1,5 @@
-import sys
 import ast
-import typing
-from typing import List, Tuple, Optional
 
-if sys.version_info >= (3, 7, 0):
-    _generic_alias_base = _optional_base = typing._GenericAlias
-else:
-    _generic_alias_base = typing.GenericMeta
-    _optional_base = typing._Union
-
-from collections import namedtuple
 from nagisa.core.primitive.malformed import Malformed
 
 __all__ = [
@@ -19,87 +9,127 @@ __all__ = [
     "infer_type",
     "check_type",
     "stringify_type",
-    "regularize_type",
     "cast",
     "str_to_object",
 ]
 
-_PRIMITIVE_TYPES = (int, float, bool, str)
-_ACCEPTED_TYPES = frozenset(
-    [
-        *_PRIMITIVE_TYPES,
-        *(List[T] for T in _PRIMITIVE_TYPES),
-    ]
-)
-_ACCEPTED_TYPES = _ACCEPTED_TYPES | frozenset(
-    [Optional[T] for T in _ACCEPTED_TYPES]
-)
+_PRIMITIVE_TYPES = [int, float, bool, str]
+_ACCEPTED_TYPES = _PRIMITIVE_TYPES.copy()
+_ACCEPTED_TYPES.extend([(T, None) for T in _PRIMITIVE_TYPES])
+_ACCEPTED_TYPES.extend([[T] for T in _ACCEPTED_TYPES])
+_ACCEPTED_TYPES.extend([(T, None) for T in _ACCEPTED_TYPES])
 
 NoneType = type(None)
+AnyType = ...
+
+
+def _is_con_type(x):
+    return isinstance(x, (list, tuple))
 
 
 def _elem(T):
-    while isinstance(T, (_generic_alias_base, _optional_base)):
+    while _is_con_type(T):
         T = _unwrap(T)
+
     return T
 
 
 def _unwrap(T):
-    if isinstance(T, (_generic_alias_base, _optional_base)):
-        L = len(T.__args__)
-        if L == 1:
-            return T.__args__[0]
-        elif L == 2:
-            return T.__args__[0 if T.__args__[1] is NoneType else 1]
-    return T
+    return T[0] if _is_con_type(T) else T
+
+
+def _unnull(T):
+    return _unwrap(T) if _is_nullable(T) else T
+
+
+def _unlist(T):
+    return _unwrap(T) if _is_list(T) else T
 
 
 def _is_nullable(T) -> bool:
-
-    return (
-        isinstance(T, (_optional_base)) and T.__origin__ is typing.Union
-        and len(T.__args__) == 2 and type(None) in T.__args__
-    )
+    return isinstance(T, tuple)
 
 
 def _is_list(T) -> bool:
-    return (
-        T in (List, list, Tuple, tuple)
-        or (_is_nullable(T) and _is_list(_unwrap(T))) or (
-            isinstance(T, _generic_alias_base)
-            and T.__origin__ in (List, list, Tuple, tuple)
-        )
-    )
+    return isinstance(T, list)
 
 
-def is_acceptable_type(T):
-    try:
-        T = regularize_type(T)
-    except AssertionError:  # TODO
-        pass
-
-    try:
-        return T in _ACCEPTED_TYPES
-    except TypeError:
-        # `T` may be unhashable
-        return False
+def is_acceptable_type(T, *, raise_exc=False) -> bool:
+    result = T in _ACCEPTED_TYPES
+    if not result and raise_exc:
+        raise TypeError(f'Unsupported type {T!r}')
+    return result
 
 
 def compatible_with(T1, T2) -> bool:
+    """
+    Values of T2 covers values of T1
+    """
+    if T2 is AnyType:
+        return True
 
-    if T1 is T2:
+    if T1 is NoneType:
+        return T2 is NoneType or _is_nullable(T2)
+
+    if T1 is Malformed or T2 is Malformed:
+        return False
+
+    if T1 == T2:
         return True
 
     if T1 is int and T2 is float:
         return True
 
     if _is_nullable(T2):
-        return T1 is NoneType or compatible_with(T1, _unwrap(T2))
+        return compatible_with(T1, _unwrap(T2))
 
     if _is_list(T1) and _is_list(T2):
-        return compatible_with(_elem(T1), _elem(T2))
+        return T1 == [] or compatible_with(_unwrap(T1), _unwrap(T2))
 
     return False
+
+
+def topper(T1, T2):
+    if T1 is Malformed or T2 is Malformed:
+        return Malformed
+    elif not (_is_con_type(T1) or _is_con_type(T2)):
+        if T1 is T2:
+            ret = T1
+        elif {T1, T2} == {int, float}:
+            ret = float
+        elif T1 == T2 == AnyType:
+            ret = AnyType
+        elif T1 is AnyType:
+            ret = T2
+        elif T2 is AnyType:
+            ret = T1
+        else:
+            ret = Malformed
+
+        return ret if ret in {
+            AnyType, NoneType, *_PRIMITIVE_TYPES
+        } else Malformed
+    elif T1 is NoneType or T2 is NoneType:
+        if T2 is NoneType:
+            T1, T2 = T2, T1
+        return T2 if _is_nullable(T2) else (T2, None)
+    elif _is_nullable(T1) or _is_nullable(T2):
+        inner_T1, inner_T2 = map(_unnull, (T1, T2))
+        topper_inner = topper(inner_T1, inner_T2)
+        return (
+            topper_inner, None
+        ) if topper_inner is not Malformed else Malformed
+    elif _is_list(T1) and _is_list(T2):
+        if T1 == T2 == []:
+            return []
+        elif T1 == []:
+            return T2
+        elif T2 == []:
+            return T1
+        topper_elem = topper(_unlist(T1), _unlist(T2))
+        return [topper_elem] if topper_elem is not Malformed else Malformed
+    else:
+        return Malformed
 
 
 def get_default_value(T):
@@ -111,66 +141,65 @@ def get_default_value(T):
         return T()
 
 
-def infer_type(value, allow_empty_list=False):
+def infer_type(value, *, allow_empty_list=False, expect_non_list=False):
     type_ = type(value)
     if type_ in (list, tuple):
+        if expect_non_list:
+            return AnyType
+
         if len(value) == 0:
             if not allow_empty_list:
                 raise TypeError(
-                    "Cannot infer type for empty container {!r}."
-                    .format(value)
+                    f"Cannot infer type for empty container {value!r}."
                 )
-            return List
+            return []
 
-        base_type = infer_type(value[0])
-        for i, x in enumerate(value[1:], start=1):
-            if not compatible_with(infer_type(x), base_type):
-                raise TypeError(
-                    "Cannot infer type for container object {!r}, "
-                    "since the {}-th element {!r} has different type as previous."
-                    .format(value, i, x)
-                )
+        base_type = AnyType
+        for x in value:
+            type_of_x = infer_type(x, expect_non_list=True)
+            base_type = topper(base_type, type_of_x)
 
-        return List[base_type]
+        if base_type in {AnyType, NoneType, Malformed}:
+            raise TypeError(
+                f'Cannot infer type for {value!r}, got element type {base_type!r}'
+            )
+
+        return [base_type]
 
     return type_
 
 
-def check_type(value, T) -> bool:
-    if _is_nullable(T) and value is None:
-        return True
-    if _is_list(T) and (value == [] or value == ()):
-        return True
+def check_type(value, T, *, check=True) -> bool:
+    if check:
+        assert is_acceptable_type(T)
 
     return compatible_with(infer_type(value, allow_empty_list=True), T)
 
 
-def stringify_type(T) -> str:
+def stringify_type(T, *, check=True) -> str:
+    if check:
+        assert is_acceptable_type(T)
 
-    suffix = ""
     if _is_nullable(T):
-        T = _unwrap(T)
-        suffix = "?"
-
-    if not _is_list(T):
-        return T.__name__ + suffix
-
-    return "[{}]".format(stringify_type(_elem(T))) + suffix
+        return stringify_type(_unwrap(T), check=False) + '?'
+    elif _is_list(T):
+        return '[' + stringify_type(_unwrap(T), check=False) + ']'
+    else:
+        return T.__name__
 
 
-def regularize_type(T):
-    if isinstance(T, list) and len(T) == 1 and T[0] in _ACCEPTED_TYPES:
-        return List[T[0]]
+def cast(value, T, *, check=True):
+    if check:
+        assert is_acceptable_type(T)
 
-    return T
-
-
-def cast(value, T):
     if value is Malformed:
         return value
 
-    if not check_type(value, T):
+    if not check_type(value, T, check=False):
         raise TypeError("Cannot cast {!r} into {!r}.".format(value, T))
+
+    if T is AnyType:
+        return value
 
     if value is None:
         return value
@@ -179,10 +208,8 @@ def cast(value, T):
         T = _unwrap(T)
 
     if _is_list(T):
-        if not value:
-            return []
-        base_type = _elem(T)
-        return [base_type(x) for x in value]
+        base_type = _unlist(T)
+        return [cast(x, base_type, check=False) for x in value]
 
     return T(value)
 
@@ -192,3 +219,5 @@ def str_to_object(string, *, default=Malformed):
         return ast.literal_eval(string)
     except (SyntaxError, ValueError):
         return default
+
+

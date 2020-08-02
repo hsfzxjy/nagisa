@@ -46,7 +46,6 @@ class SwitchableList(ProxyBase):
         self.__lstobj__ = lstobj
         self.__host__ = weakref.ref(host) if host is not None else None
         self.__mutable__ = mutable
-        T = typing.regularize_type(T)
         self.T = T
         self.elem_T = typing._elem(T)
         self.T_str = typing.stringify_type(T)

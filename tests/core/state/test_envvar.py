@@ -2,7 +2,6 @@ import os
 import contextlib
 import unittest
 from nagisa.core.state import envvar
-from nagisa.core.primitive.typing import List, Optional
 
 
 @contextlib.contextmanager
@@ -74,10 +73,10 @@ class Test_option_scan(unittest.TestCase):
             self.assertEqual(
                 self.scheme_node.type_dict(),
                 {
-                    "mod_1_foo_1": Optional[int],
-                    "mod_1_foo_2": Optional[float],
-                    "mod_1_foo_3": Optional[str],
-                    "mod_1_foo_4": Optional[List[bool]],
-                    "mod_1_foo_5": Optional[bool],
+                    "mod_1_foo_1": (int, None),
+                    "mod_1_foo_2": (float, None),
+                    "mod_1_foo_3": (str, None),
+                    "mod_1_foo_4": ([bool], None),
+                    "mod_1_foo_5": (bool, None),
                 },
             )

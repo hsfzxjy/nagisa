@@ -28,6 +28,6 @@ def parse_type(node):
     elif isinstance(node, ast.List):
         if len(node.elts) != 1:
             return Malformed
-        return typing.List[parse_type(node.elts[0])]
+        return [parse_type(node.elts[0])]
     else:
         return Malformed

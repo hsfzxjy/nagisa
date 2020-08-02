@@ -1,7 +1,7 @@
 import weakref
 import inspect
 import collections
-from typing import List, Any
+from typing import Any
 from nagisa.core.misc import accessor
 from nagisa.core.primitive.typing import *
 from nagisa.core.primitive.proxy import proxy
@@ -74,7 +74,6 @@ class SchemeNode:
                 default is not None or type_ is not None
             ), "At least one of `type_` or `default` should be provided."
 
-            type_ = regularize_type(type_)
             if default is None:
                 final_type = type_
             elif type_ is None:
@@ -84,13 +83,12 @@ class SchemeNode:
                     default, type_
                 ), f"Value {default!r} is incompatible with type {type_!r}"
                 final_type = type_
-            assert is_acceptable_type(
-                final_type
-            ), f"Type {final_type!r} is not acceptable"
+
+            is_acceptable_type(final_type, raise_exc=True)
             if default is None:
                 default = get_default_value(final_type)
             self._value = proxy(
-                cast(default, final_type),
+                cast(default, final_type, check=False),
                 T=final_type,
                 mutable=True,
                 host=self,
@@ -292,7 +290,7 @@ class SchemeNode:
                 )
 
             host._value = proxy(
-                cast(obj, host._meta.type),
+                cast(obj, host._meta.type, check=False),
                 T=host._meta.type,
                 mutable=host.mutable,
                 host=host,

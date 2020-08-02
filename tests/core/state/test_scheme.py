@@ -13,10 +13,10 @@ class TestInit(unittest.TestCase):
             [0.0, float],
             ["", str],
             [False, bool],
-            [[], scheme.List[int]],
-            [[], scheme.List[float]],
-            [[], scheme.List[str]],
-            [[], scheme.List[bool]],
+            [[], [int]],
+            [[], [float]],
+            [[], [str]],
+            [[], [bool]],
         ]
 
         for value, T in cases:
@@ -29,14 +29,14 @@ class TestInit(unittest.TestCase):
             [1.0, float],
             ["baz", str],
             [True, bool],
-            [(1, 2), scheme.List[int]],
-            [(1.0, 2), scheme.List[float]],
-            [("baz", "baz2"), scheme.List[str]],
-            [(True, False), scheme.List[bool]],
-            [[1, 2], scheme.List[int]],
-            [[1.0, 2], scheme.List[float]],
-            [["baz", "baz2"], scheme.List[str]],
-            [[True, False], scheme.List[bool]],
+            [(1, 2), [int]],
+            [(1.0, 2), [float]],
+            [("baz", "baz2"), [str]],
+            [(True, False), [bool]],
+            [[1, 2], [int]],
+            [[1.0, 2], [float]],
+            [["baz", "baz2"], [str]],
+            [[True, False], [bool]],
         ]
         for value, T in cases:
             x = scheme.SchemeNode(default=value)
@@ -48,10 +48,10 @@ class TestInit(unittest.TestCase):
             [1.0, float],
             ["baz", str],
             [True, bool],
-            [[1, 2], scheme.List[int]],
-            [[1.0, 2], scheme.List[float]],
-            [["baz", "baz2"], scheme.List[str]],
-            [[True, False], scheme.List[bool]],
+            [[1, 2], [int]],
+            [[1.0, 2], [float]],
+            [["baz", "baz2"], [str]],
+            [[True, False], [bool]],
         ]
         for value, T in cases:
             x = scheme.SchemeNode(default=value, type_=T)
@@ -83,7 +83,7 @@ class TestInit(unittest.TestCase):
                 scheme.SchemeNode(default=value, type_=T)
 
         cases = [
-            [(1, ), scheme.List[str]],
+            [(1, ), [str]],
         ]
         for value, T in cases:
             with self.assertRaises(
