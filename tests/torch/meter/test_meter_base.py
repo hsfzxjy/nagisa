@@ -47,25 +47,16 @@ class TestMeterBase(TestBase):
         class MeterLike(self.meters.MeterBase, key="MyMeterLike"):
             reset = update = compute = f
 
-        self.assertRaises(
-            RuntimeError, self.meters.build_meter, "meter_like", ()
-        )
-        self.assertRaises(
-            RuntimeError, self.meters.build_meter, "MeterLike", ()
-        )
+        self.assertRaises(RuntimeError, self.meters.build_meter, "meter_like", ())
+        self.assertRaises(RuntimeError, self.meters.build_meter, "MeterLike", ())
         self.meters.build_meter("MyMeterLike", ())
 
     def test_register_with_key_list(self):
-        class MeterLike(self.meters.MeterBase, key=["MyMeterLike",
-                                                    "MyMeterLike2"]):
+        class MeterLike(self.meters.MeterBase, key=["MyMeterLike", "MyMeterLike2"]):
             reset = update = compute = f
 
-        self.assertRaises(
-            RuntimeError, self.meters.build_meter, "meter_like", ()
-        )
-        self.assertRaises(
-            RuntimeError, self.meters.build_meter, "MeterLike", ()
-        )
+        self.assertRaises(RuntimeError, self.meters.build_meter, "meter_like", ())
+        self.assertRaises(RuntimeError, self.meters.build_meter, "MeterLike", ())
         self.meters.build_meter("MyMeterLike", ())
         self.meters.build_meter("MyMeterLike2", ())
 

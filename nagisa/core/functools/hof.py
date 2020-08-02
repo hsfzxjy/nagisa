@@ -13,9 +13,7 @@ __all__ = [
 ]
 
 
-def make_annotator(
-    f: Callable, spec, slot_name: str, init_fn: Callable, annotate_fn: Callable
-):
+def make_annotator(f: Callable, spec, slot_name: str, init_fn: Callable, annotate_fn: Callable):
     from nagisa.core.functools.adapter import adapt_spec
 
     def _decorator(host_f):
@@ -31,11 +29,7 @@ def make_annotator(
 
 
 def make_function(
-    name: str,
-    body: str,
-    *,
-    src_fname: str = 'F',
-    globals: Optional[dict] = None
+    name: str, body: str, *, src_fname: str = 'F', globals: Optional[dict] = None
 ) -> Callable:
     body = textwrap.dedent(body)
     code = compile(body, "<string>", "exec")
@@ -44,14 +38,11 @@ def make_function(
 
     func_code = None
     for obj in code.co_consts:
-        if (isinstance(obj, types.CodeType)
-                and (obj.co_name == name or obj.co_name == src_fname)):
+        if (isinstance(obj, types.CodeType) and (obj.co_name == name or obj.co_name == src_fname)):
             func_code = obj
 
     if func_code is None:
-        raise RuntimeError(
-            f'Cannot find function {name} or {src_fname} in compiled code:\n{body}'
-        )
+        raise RuntimeError(f'Cannot find function {name} or {src_fname} in compiled code:\n{body}')
 
     return types.FunctionType(func_code, globals, name)
 
@@ -65,8 +56,7 @@ def emulate(
     return functools.update_wrapper(
         wrapper,
         wrapped,
-        assigned=assigned +
-        ('__signature__', '__defaults__', '__kwdefaults__'),
+        assigned=assigned + ('__signature__', '__defaults__', '__kwdefaults__'),
         updated=updated,
     )
 
@@ -108,8 +98,7 @@ def decorative(*, name: str, f: Optional[Callable] = None) -> Callable:
 
         assert name in sig.parameters, f'{f!r} has no argument {name!r}'
         assert sig.parameters[
-            name
-        ].default is None, f'Argument {name!r} should be keyword and default to None'
+            name].default is None, f'Argument {name!r} should be keyword and default to None'
 
         return emulate(
             make_function(

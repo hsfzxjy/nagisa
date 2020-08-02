@@ -44,17 +44,9 @@ class TestGetDataset(BaseDatasetTestCase):
             return Image(img_name)
 
         ds = s.get_dataset("dataset1", "train", cfg="mock")
-        expected = [
-            {
-                "img": Image(f"/path/dataset1/train/img_{x}.png")
-            } for x in range(200)
-        ]
+        expected = [{"img": Image(f"/path/dataset1/train/img_{x}.png")} for x in range(200)]
         self.assertEqual(list(ds), expected)
 
         ds = s.get_dataset("dataset2", "val", cfg="mock")
-        expected = [
-            {
-                "img": Image(f"/path/dataset2/val/img_{x}.png")
-            } for x in range(100)
-        ]
+        expected = [{"img": Image(f"/path/dataset2/val/img_{x}.png")} for x in range(100)]
         self.assertEqual(list(ds), expected)

@@ -106,9 +106,7 @@ def topper(T1, T2):
         else:
             ret = Malformed
 
-        return ret if ret in {
-            AnyType, NoneType, *_PRIMITIVE_TYPES
-        } else Malformed
+        return ret if ret in {AnyType, NoneType, *_PRIMITIVE_TYPES} else Malformed
     elif T1 is NoneType or T2 is NoneType:
         if T2 is NoneType:
             T1, T2 = T2, T1
@@ -116,9 +114,7 @@ def topper(T1, T2):
     elif _is_nullable(T1) or _is_nullable(T2):
         inner_T1, inner_T2 = map(_unnull, (T1, T2))
         topper_inner = topper(inner_T1, inner_T2)
-        return (
-            topper_inner, None
-        ) if topper_inner is not Malformed else Malformed
+        return (topper_inner, None) if topper_inner is not Malformed else Malformed
     elif _is_list(T1) and _is_list(T2):
         if T1 == T2 == []:
             return []
@@ -149,9 +145,7 @@ def infer_type(value, *, allow_empty_list=False, expect_non_list=False):
 
         if len(value) == 0:
             if not allow_empty_list:
-                raise TypeError(
-                    f"Cannot infer type for empty container {value!r}."
-                )
+                raise TypeError(f"Cannot infer type for empty container {value!r}.")
             return []
 
         base_type = AnyType
@@ -160,9 +154,7 @@ def infer_type(value, *, allow_empty_list=False, expect_non_list=False):
             base_type = topper(base_type, type_of_x)
 
         if base_type in {AnyType, NoneType, Malformed}:
-            raise TypeError(
-                f'Cannot infer type for {value!r}, got element type {base_type!r}'
-            )
+            raise TypeError(f'Cannot infer type for {value!r}, got element type {base_type!r}')
 
         return [base_type]
 
@@ -219,5 +211,3 @@ def str_to_object(string, *, default=Malformed):
         return ast.literal_eval(string)
     except (SyntaxError, ValueError):
         return default
-
-

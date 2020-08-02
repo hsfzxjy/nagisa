@@ -4,9 +4,7 @@ from nagisa.core import functools
 
 
 def _make_function(params):
-    func_code = compile(
-        f"""def f({', '.join(params)}): pass""", "<string>", "exec"
-    )
+    func_code = compile(f"""def f({', '.join(params)}): pass""", "<string>", "exec")
     return types.FunctionType(func_code.co_consts[0], {}, "f")
 
 
@@ -87,9 +85,7 @@ class Test_match_spec(unittest.TestCase):
                 adapter_params,
                 mapping,
             )
-            self.assertEqual(
-                result, expected, msg=f"params = {params!r}, spec={spec!r}"
-            )
+            self.assertEqual(result, expected, msg=f"params = {params!r}, spec={spec!r}")
 
     def test_bad_spec(self):
         cases = [

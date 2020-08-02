@@ -35,18 +35,11 @@ class TestBaseMeterGroup(TestBase):
         self.assertTrue(self.mb.is_meter_class(self.mg.BaseMeterGroup))
 
     def test_add_group_spec_init_only(self):
-        self.group.add_group(
-            "group1", ["arg1", "arg2"], {
-                "m1": "Avg",
-                "m2": "Avg"
-            }
-        )
+        self.group.add_group("group1", ["arg1", "arg2"], {"m1": "Avg", "m2": "Avg"})
         self.group.update("group1", inputs={"arg1": 42, "arg2": 2})
         self.assertEqual(self.group.compute("group1"), {"m1": 21, "m2": 21})
 
-        self.group.remove_group("group1").add_group(
-            "group1", ["arg1", "arg2"], {"m1": ("Avg", )}
-        )
+        self.group.remove_group("group1").add_group("group1", ["arg1", "arg2"], {"m1": ("Avg", )})
         self.group.update("group1", inputs={"arg1": 42, "arg2": 2})
         self.assertEqual(self.group.compute("group1"), {"m1": 21})
 
@@ -63,17 +56,8 @@ class TestBaseMeterGroup(TestBase):
         self.assertEqual(self.group.compute("group1"), {"m1": 21})
 
     def test_add_group_spec_init_and_mapping_only(self):
-        self.group.add_group(
-            "group1", ["arg1", "arg2"], {"m1": ["Avg", ["arg1.value"]]}
-        )
-        self.group.update(
-            "group1", inputs={
-                "arg1": {
-                    "value": 42
-                },
-                "arg2": None
-            }
-        )
+        self.group.add_group("group1", ["arg1", "arg2"], {"m1": ["Avg", ["arg1.value"]]})
+        self.group.update("group1", inputs={"arg1": {"value": 42}, "arg2": None})
         self.assertEqual(self.group.compute("group1"), {"m1": 42})
 
         self.group.remove_group("group1").add_group(
@@ -84,15 +68,7 @@ class TestBaseMeterGroup(TestBase):
                 "num": "arg1.num"
             }]},
         )
-        self.group.update(
-            "group1", inputs={
-                "arg1": {
-                    "value": 42,
-                    "num": 2
-                },
-                "arg2": None
-            }
-        )
+        self.group.update("group1", inputs={"arg1": {"value": 42, "num": 2}, "arg2": None})
         self.assertEqual(self.group.compute("group1"), {"m1": 21})
 
     def test_update_overload(self):
@@ -100,15 +76,11 @@ class TestBaseMeterGroup(TestBase):
         self.group.update("group1", a=42, b=2)
         self.assertEqual(self.group.compute("group1"), {"m": 21})
 
-        self.group.remove_group("group1").update(
-            "group1", b=42, a=2, spec={"m": "Avg"}
-        )
+        self.group.remove_group("group1").update("group1", b=42, a=2, spec={"m": "Avg"})
         self.group.update("group1", b=42, a=2)
         self.assertEqual(self.group.compute("group1"), {"m": 21})
 
-        self.group.remove_group("group1").update(
-            "group1", b=42, a=2, spec={"m": "Avg"}
-        )
+        self.group.remove_group("group1").update("group1", b=42, a=2, spec={"m": "Avg"})
         self.group.update("group1", b=2, a=42)
         self.assertEqual(self.group.compute("group1"), {"m": 1})
 
@@ -119,26 +91,13 @@ class TestBaseMeterGroup(TestBase):
         self.assertEqual(self.group.compute("group1"), {"m": 21})
 
     def test_compute_all(self):
-        self.group.add_group("group1", ["a"], {
-            "m": "Avg"
-        }).add_group("group2", ["a"], {"m": "Avg"})
+        self.group.add_group("group1", ["a"], {"m": "Avg"}).add_group("group2", ["a"], {"m": "Avg"})
         self.group.update('group1', a=42).update('group2', a=42)
-        self.assertEqual(
-            self.group.compute(), {
-                'group1': {
-                    'm': 42
-                },
-                'group2': {
-                    'm': 42
-                }
-            }
-        )
+        self.assertEqual(self.group.compute(), {'group1': {'m': 42}, 'group2': {'m': 42}})
 
     def test_reset_iter(self):
         self.group.update(
-            'group1',
-            a=1,
-            spec={
+            'group1', a=1, spec={
                 'm1': ['Avg', ..., 'iter'],
                 'm2': ['Avg', ..., 'epoch']
             }
@@ -155,9 +114,7 @@ class TestBaseMeterGroup(TestBase):
 
     def test_reset_epoch(self):
         self.group.update(
-            'group1',
-            a=1,
-            spec={
+            'group1', a=1, spec={
                 'm1': ['Avg', ..., 'iter'],
                 'm2': ['Avg', ..., 'epoch']
             }
@@ -174,9 +131,7 @@ class TestBaseMeterGroup(TestBase):
 
     def test_reset_all(self):
         self.group.update(
-            'group1',
-            a=1,
-            spec={
+            'group1', a=1, spec={
                 'm1': ['Avg', ..., 'iter'],
                 'm2': ['Avg', ..., 'epoch']
             }
@@ -199,23 +154,11 @@ class TestDefaultMeterGroup(TestBase):
 
     def test_update_loss(self):
         self.group.update_loss({'main': 1, 'aux': .5, 'ce': .5})
-        self.assertEqual(
-            self.group.compute_loss(), {
-                'main': 1,
-                'aux': .5,
-                'ce': .5
-            }
-        )
+        self.assertEqual(self.group.compute_loss(), {'main': 1, 'aux': .5, 'ce': .5})
 
     def test_update_time(self):
         self.group.update_time({'main': 1, 'aux': .5, 'ce': .5})
-        self.assertEqual(
-            self.group.compute_time(), {
-                'main': 1,
-                'aux': .5,
-                'ce': .5
-            }
-        )
+        self.assertEqual(self.group.compute_time(), {'main': 1, 'aux': .5, 'ce': .5})
 
     def test_update_metrics(self):
         from ignite.metrics.confusion_matrix import ConfusionMatrix

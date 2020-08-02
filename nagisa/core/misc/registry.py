@@ -13,9 +13,7 @@ class Registry:
 
     def _register(self, key, value):
         if key in self._mapping and self.__unique:
-            raise KeyError(
-                f"Key {key!r} already registered in <Registry: {self.__name}>"
-            )
+            raise KeyError(f"Key {key!r} already registered in <Registry: {self.__name}>")
         value = self._check_value(key, value)
         self._mapping[key] = value
         return value
@@ -118,9 +116,7 @@ class MultiEntryConditionalFunctionRegistry(MultiEntryFunctionRegistry):
 
     @classmethod
     def when(cls, f):
-        return make_annotator(
-            f, cls._when_spec, "__when__", list, _when_annotator_fn
-        )
+        return make_annotator(f, cls._when_spec, "__when__", list, _when_annotator_fn)
 
     def _check_value(self, key, f):
         new_f = super()._check_value(key, f)

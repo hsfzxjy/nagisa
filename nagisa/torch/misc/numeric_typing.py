@@ -35,10 +35,7 @@ def as_float(x):
 
 
 def axis_kw(T: NumericType) -> str:
-    return {
-        NumericType.NUMPY: "axis",
-        NumericType.TORCH: "dim"
-    }.get(T) or _not_implemented()
+    return {NumericType.NUMPY: "axis", NumericType.TORCH: "dim"}.get(T) or _not_implemented()
 
 
 def detach(x):

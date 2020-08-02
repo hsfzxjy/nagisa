@@ -7,13 +7,10 @@ from nagisa.torch.misc.test import TorchTestCase
 from nagisa.core.misc.io import download_url_to_file, prepare_resource
 from nagisa.torch.misc.io import load_state_dict
 
-skip_if_local = unittest.skipIf(
-    os.getenv("LOCAL") is not None, "local testing"
-)
+skip_if_local = unittest.skipIf(os.getenv("LOCAL") is not None, "local testing")
 
 skip_if_local_and_no_proxy = unittest.skipIf(
-    "proxychains" not in os.environ.get("LD_PRELOAD", "")
-    and os.getenv("LOCAL") is not None,
+    "proxychains" not in os.environ.get("LD_PRELOAD", "") and os.getenv("LOCAL") is not None,
     "local testing and no proxy",
 )
 
@@ -35,9 +32,7 @@ class TestDownloadUrlToFile(TorchTestCase):
         )
 
         data = torch.load(self.dest)
-        self.assertTensorEqual(
-            data["tensor"], torch.tensor(range(100), dtype=float)
-        )
+        self.assertTensorEqual(data["tensor"], torch.tensor(range(100), dtype=float))
         self.assertEqual(data["string"], "hello world")
 
     @skip_if_local
@@ -74,9 +69,7 @@ class TestLoadStateDict(TorchTestCase):
             return_filename=True,
         )
 
-        self.assertTensorEqual(
-            data["tensor"], torch.tensor(range(100), dtype=float)
-        )
+        self.assertTensorEqual(data["tensor"], torch.tensor(range(100), dtype=float))
         self.assertEqual(data["string"], "hello world")
 
     @skip_if_local_and_no_proxy
@@ -86,9 +79,7 @@ class TestLoadStateDict(TorchTestCase):
             return_filename=True,
         )
 
-        self.assertTensorEqual(
-            data["tensor"], torch.tensor(range(100), dtype=float)
-        )
+        self.assertTensorEqual(data["tensor"], torch.tensor(range(100), dtype=float))
         self.assertEqual(data["string"], "hello world")
 
     @skip_if_local_and_no_proxy
@@ -100,9 +91,7 @@ class TestLoadStateDict(TorchTestCase):
             return_filename=True,
         )
 
-        self.assertTensorEqual(
-            data["tensor"], torch.tensor(range(100), dtype=float)
-        )
+        self.assertTensorEqual(data["tensor"], torch.tensor(range(100), dtype=float))
         self.assertEqual(data["string"], "hello world")
 
     @skip_if_local

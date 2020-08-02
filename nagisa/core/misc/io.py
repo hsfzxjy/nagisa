@@ -121,9 +121,7 @@ def resolve(
     )
 
 
-URLOpener = FunctionSelector(
-    f"{__name__}.URLOpener", func_spec=["url | u"], cond_spec=["url | u?"]
-)
+URLOpener = FunctionSelector(f"{__name__}.URLOpener", func_spec=["url | u"], cond_spec=["url | u?"])
 
 _google_drive_regexp = re.compile(
     r"^https://drive\.google\.com/(file/d/(?P<id>[\w\-_]+)/view|uc\?.*id=(?P<id2>[^&]+)).*$"
@@ -138,9 +136,7 @@ def google_drive_opener(url):
     url = f"https://drive.google.com/uc?id={id}"
 
     cj = http.cookiejar.CookieJar()
-    opener = urllib.request.build_opener(
-        urllib.request.HTTPCookieProcessor(cj)
-    )
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 
     response = opener.open(url)
     content_type = response.getheader("Content-Type")
@@ -207,9 +203,7 @@ def download_url_to_file(url, dst, hash_prefix=None, progress=True):
             digest = sha256.hexdigest()
             if digest[:len(hash_prefix)] != hash_prefix:
                 raise RuntimeError(
-                    'invalid hash value (expected "{}", got "{}")'.format(
-                        hash_prefix, digest
-                    )
+                    'invalid hash value (expected "{}", got "{}")'.format(hash_prefix, digest)
                 )
         shutil.move(f.name, dst)
     finally:
@@ -236,10 +230,7 @@ def prepare_resource(src, dst, progress=True, check_hash=False):
         if isinstance(check_hash, str):
             hash_prefix = check_hash
         else:
-            hash_prefix = (
-                torch.hub.HASH_REGEX.search(filename).group(1)
-                if check_hash else None
-            )
+            hash_prefix = (torch.hub.HASH_REGEX.search(filename).group(1) if check_hash else None)
 
         download_url_to_file(url, dst, hash_prefix, progress=progress)
 

@@ -31,14 +31,10 @@ class TestLogging(unittest.TestCase):
             return f.read()
 
     def test_logger_class(self):
-        self.assertIsInstance(
-            self.logging.getLogger('nagisa'), self.contrib_logging._Logger
-        )
+        self.assertIsInstance(self.logging.getLogger('nagisa'), self.contrib_logging._Logger)
 
     def test_log_to_file_txt_ext(self):
-        self.contrib_logging.setup_logger(
-            os.path.join(self.logdir, "test_log.txt")
-        )
+        self.contrib_logging.setup_logger(os.path.join(self.logdir, "test_log.txt"))
         logger = self.logging.getLogger("nagisa.null")
         logger.info("test")
         self.assertIn(
@@ -47,9 +43,7 @@ class TestLogging(unittest.TestCase):
         )
 
     def test_log_to_file_log_ext(self):
-        self.contrib_logging.setup_logger(
-            os.path.join(self.logdir, "test_log.log")
-        )
+        self.contrib_logging.setup_logger(os.path.join(self.logdir, "test_log.log"))
         logger = self.logging.getLogger("nagisa.null")
         logger.info("test")
         self.assertIn(
@@ -88,10 +82,7 @@ class TestLogging(unittest.TestCase):
         self.log_twice(logger)
         self.assertRegexpMatches(
             self.get_content("log.txt"),
-            re.compile(
-                r'[^\n]*nagisa.null INFO: test\n.*nagisa.null INFO: test\n',
-                re.M
-            )
+            re.compile(r'[^\n]*nagisa.null INFO: test\n.*nagisa.null INFO: test\n', re.M)
         )
 
     def log_once(self, logger):
@@ -104,8 +95,7 @@ class TestLogging(unittest.TestCase):
         self.log_once(logger)
         self.log_once(logger)
         self.assertRegexpMatches(
-            self.get_content("log.txt"),
-            re.compile(r'[^\n]*nagisa.null INFO: test\n', re.M)
+            self.get_content("log.txt"), re.compile(r'[^\n]*nagisa.null INFO: test\n', re.M)
         )
 
     def log_every_three_times(self, logger):
@@ -120,10 +110,7 @@ class TestLogging(unittest.TestCase):
 
         self.assertRegexpMatches(
             self.get_content("log.txt"),
-            re.compile(
-                r'[^\n]*nagisa.null INFO: test\n.*nagisa.null INFO: test\n',
-                re.M
-            )
+            re.compile(r'[^\n]*nagisa.null INFO: test\n.*nagisa.null INFO: test\n', re.M)
         )
 
     def log_every_one_second(self, logger):
@@ -141,6 +128,5 @@ class TestLogging(unittest.TestCase):
             self.log_every_one_second(logger)
 
         self.assertRegexpMatches(
-            self.get_content("log.txt"),
-            re.compile(r'[^\n]*nagisa.null INFO: test\n', re.M)
+            self.get_content("log.txt"), re.compile(r'[^\n]*nagisa.null INFO: test\n', re.M)
         )

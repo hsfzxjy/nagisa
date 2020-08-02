@@ -48,9 +48,7 @@ class Test_merge(unittest.TestCase):
         )
 
     def test_merge_from_args(self):
-        config = Config().merge_from_args(
-            argparse.Namespace(foo4=[1]),
-        ).finalize()
+        config = Config().merge_from_args(argparse.Namespace(foo4=[1]), ).finalize()
         self.assertEqual(
             config.value_dict(),
             {
@@ -63,11 +61,7 @@ class Test_merge(unittest.TestCase):
             },
         )
 
-        config = (
-            Config().merge_from_args(
-                argparse.Namespace(foo4=[1], foo2=36),
-            ).finalize()
-        )
+        config = (Config().merge_from_args(argparse.Namespace(foo4=[1], foo2=36), ).finalize())
         self.assertEqual(
             config.value_dict(),
             {
@@ -112,9 +106,7 @@ class TestSingleton(unittest.TestCase):
         import sys, importlib
 
         sys.modules.pop("nagisa.core.state.config", None)
-        self.config_module = importlib.import_module(
-            "nagisa.core.state.config"
-        )
+        self.config_module = importlib.import_module("nagisa.core.state.config")
 
     def test_singleton(self):
         @self.config_module.ConfigNode.from_class(singleton=True)

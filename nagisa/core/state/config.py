@@ -50,9 +50,7 @@ class ConfigNode(SchemeNode):
             directives.append(
                 (
                     ".".join(path),
-                    envvar.object_from_envvar(
-                        entry._meta.attributes.env, entry._meta.type
-                    ),
+                    envvar.object_from_envvar(entry._meta.attributes.env, entry._meta.type),
                 )
             )
 
@@ -61,19 +59,11 @@ class ConfigNode(SchemeNode):
 
         return self
 
-    def merge_from_remainder(
-        self, remainder, ignore_errors=False, ext_syntax=True
-    ):
+    def merge_from_remainder(self, remainder, ignore_errors=False, ext_syntax=True):
         if not isinstance(remainder, list):
-            raise TypeError(
-                "Expect `remainder` to be a list, got {!r}.".format(
-                    type(remainder)
-                )
-            )
+            raise TypeError("Expect `remainder` to be a list, got {!r}.".format(type(remainder)))
         if len(remainder) % 2 != 0:
-            raise ValueError(
-                "Expect `remainder` to have odd number of elements."
-            )
+            raise ValueError("Expect `remainder` to have odd number of elements.")
 
         self._merge_from_directives(
             zip(
@@ -86,9 +76,7 @@ class ConfigNode(SchemeNode):
         return self
 
     def track_envvar(self, dirname=".", func_names=()):
-        self.entry(
-            "ENVVAR", self.__class__(is_container=True, attributes=["w"])
-        )
+        self.entry("ENVVAR", self.__class__(is_container=True, attributes=["w"]))
         envvar._registry.sync_with(self.ENVVAR)
         envvar._registry.scan(dirname, caller_level=-4)
         return self
@@ -102,9 +90,7 @@ class ConfigNode(SchemeNode):
     @classmethod
     def instance(cls, raise_exc=False):
         if raise_exc and cls.__instance is None:
-            raise RuntimeError(
-                "This feature requires a singleton config node being initialized."
-            )
+            raise RuntimeError("This feature requires a singleton config node being initialized.")
         return cls.__instance
 
 
@@ -126,35 +112,25 @@ class ConfigValue(object):
 
     def set(self, value):
         if self.__config_path is not None:
-            raise RuntimeError(
-                f"Cannot set value for {self!r} after its config path being set."
-            )
+            raise RuntimeError(f"Cannot set value for {self!r} after its config path being set.")
         if self.__value is not self._Null:
-            raise RuntimeError(
-                f"Cannot set value on {self!r} for more than once."
-            )
+            raise RuntimeError(f"Cannot set value on {self!r} for more than once.")
 
         self.__value = self._wrap(value)
         return value
 
     def set_cfg(self, path):
         if self.__value is not self._Null:
-            raise RuntimeError(
-                f"Cannot set config path for {self!r} after its value being set."
-            )
+            raise RuntimeError(f"Cannot set config path for {self!r} after its value being set.")
         if self.__config_path is not None:
-            raise RuntimeError(
-                f"Cannot set config path on {self!r} for more than once."
-            )
+            raise RuntimeError(f"Cannot set config path on {self!r} for more than once.")
         self.__config_path = path
 
     def value(self, *args, **kwargs):
         if self.__config_path is not None:
             cfg = ConfigNode.instance()
             if cfg is None:
-                raise RuntimeError(
-                    f"{self!r} requires a singleton config node being initialized."
-                )
+                raise RuntimeError(f"{self!r} requires a singleton config node being initialized.")
             return cfg.value_by_path(self.__config_path)
         elif self.__value is not self._Null or self.__default is not self._Null:
             value = self.__value if self.__value is not self._Null else self.__default
@@ -162,9 +138,7 @@ class ConfigValue(object):
                 return value(*args, **kwargs)
             return value
         else:
-            raise RuntimeError(
-                f"Neither config path nor value is set for {self!r}."
-            )
+            raise RuntimeError(f"Neither config path nor value is set for {self!r}.")
 
     func = value
 

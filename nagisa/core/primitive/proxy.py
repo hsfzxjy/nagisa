@@ -62,9 +62,7 @@ class SwitchableList(ProxyBase):
 
             caller_frame_locals = sys._getframe(1).f_locals
             if caller_frame_locals.get('self', None) is not host:
-                raise RuntimeError(
-                    f'`mutable()` should be called within method of {host!r}'
-                )
+                raise RuntimeError(f'`mutable()` should be called within method of {host!r}')
 
         self.__mutable__ = value
 
@@ -76,9 +74,7 @@ class SwitchableList(ProxyBase):
     def append(self, object):
         self._ensure_mutable()
         if not typing.check_type(object, self.elem_T):
-            raise TypeError(
-                f'Cannot append {object!r} to {self.T_str} type list'
-            )
+            raise TypeError(f'Cannot append {object!r} to {self.T_str} type list')
 
         self.__lstobj__.append(object)
 
@@ -86,9 +82,7 @@ class SwitchableList(ProxyBase):
     def extend(self, iterable):
         self._ensure_mutable()
         if not typing.check_type(iterable, self.T):
-            raise TypeError(
-                f'Cannot extend {iterable!r} to {self.T_str} type list'
-            )
+            raise TypeError(f'Cannot extend {iterable!r} to {self.T_str} type list')
 
         self.__lstobj__.extend(iterable)
 
@@ -96,9 +90,7 @@ class SwitchableList(ProxyBase):
     def insert(self, index, object):
         self._ensure_mutable()
         if not typing.check_type(object, self.elem_T):
-            raise TypeError(
-                f'Cannot insert {object!r} into {self.T_str} type list'
-            )
+            raise TypeError(f'Cannot insert {object!r} into {self.T_str} type list')
 
         self.__lstobj__.insert(index, object)
 

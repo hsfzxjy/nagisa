@@ -106,18 +106,16 @@ class TestAddEntry(unittest.TestCase):
 
     def test_add_container(self):
         x = (
-            scheme.SchemeNode(is_container=True).entry(
-                "foo",
-                scheme.SchemeNode(is_container=True).entry("bar", 1)
-            ).finalize()
+            scheme.SchemeNode(is_container=True
+                              ).entry("foo",
+                                      scheme.SchemeNode(is_container=True).entry("bar",
+                                                                                 1)).finalize()
         )
         self.assertEqual(x.foo.bar, 1)
 
     def test_add_duplicated_node(self):
         with self.assertRaises(AssertionError):
-            x = scheme.SchemeNode(
-                is_container=True,
-            ).entry("foo", 1).entry("foo", 2)
+            x = scheme.SchemeNode(is_container=True, ).entry("foo", 1).entry("foo", 2)
 
 
 class TestAddAlias(unittest.TestCase):
@@ -233,14 +231,16 @@ class TestSetAttr(unittest.TestCase):
 
     def test_set_attr_wrong_type(self):
         with self.assertRaises(TypeError):
-            scheme.SchemeNode(is_container=True).entry(
-                "foo", scheme.SchemeNode(default=(1, ), attributes="writable")
-            ).finalize().foo = ["1"]
+            scheme.SchemeNode(
+                is_container=True
+            ).entry("foo", scheme.SchemeNode(default=(1, ),
+                                             attributes="writable")).finalize().foo = ["1"]
 
         with self.assertRaises(TypeError):
-            scheme.SchemeNode(is_container=True).entry(
-                "foo", scheme.SchemeNode(default=1, attributes="writable")
-            ).finalize().foo = 1.0
+            scheme.SchemeNode(is_container=True
+                              ).entry("foo",
+                                      scheme.SchemeNode(default=1,
+                                                        attributes="writable")).finalize().foo = 1.0
 
     def test_set_attr_free_container(self):
         x = scheme.SchemeNode(is_container=True).entry(
@@ -299,9 +299,7 @@ class TestSetAttr(unittest.TestCase):
 
         with self.assertRaises(AttributeError) as cm:
             x.foo = {"bar": 1}
-            self.assertEqual(
-                str(cm.exception), "Cannot update a read-only entry 'foo'."
-            )
+            self.assertEqual(str(cm.exception), "Cannot update a read-only entry 'foo'.")
 
     def test_set_attr_before_finalized(self):
         x = scheme.SchemeNode(is_container=True).entry("foo", 1)
@@ -349,11 +347,7 @@ class TestDeclaritveConstructor(unittest.TestCase):
 
         x = Config().finalize()
         x.bar.baz = 3.14
-        self.assertEqual(
-            str(x), "foo: ([str]) []\n"
-            "bar:\n"
-            "  baz: (float) 3.14\n"
-        )
+        self.assertEqual(str(x), "foo: ([str]) []\n" "bar:\n" "  baz: (float) 3.14\n")
 
     def test_from_class_writable_container(self):
         @scheme.SchemeNode.from_class
@@ -366,11 +360,7 @@ class TestDeclaritveConstructor(unittest.TestCase):
 
         x = Config().finalize()
         x.bar.baz = 3.14
-        self.assertEqual(
-            str(x), "foo: ([str]) []\n"
-            "bar:\n"
-            "  baz: (float) 3.14\n"
-        )
+        self.assertEqual(str(x), "foo: ([str]) []\n" "bar:\n" "  baz: (float) 3.14\n")
 
     def test_from_class_alias(self):
         @scheme.SchemeNode.from_class
@@ -412,27 +402,13 @@ class TestMerge(unittest.TestCase):
             foo_4: [float]
 
     def test_merge_from_dict(self):
-        dct = {
-            "foo_1": 42,
-            "foo_2": ["bar"],
-            "sub": {
-                "foo_3": True,
-                "foo_4": [123]
-            }
-        }
+        dct = {"foo_1": 42, "foo_2": ["bar"], "sub": {"foo_3": True, "foo_4": [123]}}
         cfg = self.Config().merge_from_dict(dct).finalize()
 
         self.assertEqual(cfg.value_dict(), dct)
 
     def test_merge_from_dict_attributeerror(self):
-        dct = {
-            "foo_1": 42,
-            "foo_2": ["bar"],
-            "sub": {
-                "foo_3": True,
-                "foo_5": [123]
-            }
-        }
+        dct = {"foo_1": 42, "foo_2": ["bar"], "sub": {"foo_3": True, "foo_5": [123]}}
 
         with self.assertRaises(AttributeError) as cm:
             cfg = self.Config().merge_from_dict(dct).finalize()
@@ -462,8 +438,7 @@ class TestMerge(unittest.TestCase):
         self.assertEqual(cfg.value_dict(), {"sub": {"foo": "bar"}})
 
     def test_load_from_file(self):
-        cfg = self.Config().merge_from_file("yaml_example/a/b/c.yaml"
-                                            ).finalize()
+        cfg = self.Config().merge_from_file("yaml_example/a/b/c.yaml").finalize()
         self.assertEqual(
             cfg.value_dict(),
             {
@@ -491,8 +466,7 @@ class TestMerge(unittest.TestCase):
 
     def test_load_from_file_typeerror(self):
         with self.assertRaises(TypeError):
-            cfg = self.Config().merge_from_file("yaml_example/a/b.yaml"
-                                                ).finalize()
+            cfg = self.Config().merge_from_file("yaml_example/a/b.yaml").finalize()
 
 
 class Test_dump(unittest.TestCase):
@@ -508,16 +482,14 @@ class Test_dump(unittest.TestCase):
         with open(self.temp_file) as f:
             return f.read()
 
-    expected_content = '\n'.join(
-        [
-            'a: 1',
-            'b: false',
-            'c: []',
-            'd:',
-            '  e: 4.2',
-            '',
-        ]
-    )
+    expected_content = '\n'.join([
+        'a: 1',
+        'b: false',
+        'c: []',
+        'd:',
+        '  e: 4.2',
+        '',
+    ])
 
     @scheme.SchemeNode.from_class
     class Config:

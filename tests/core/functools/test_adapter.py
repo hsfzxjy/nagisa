@@ -4,9 +4,7 @@ from nagisa.core import functools
 
 
 def _make_function(params):
-    func_code = compile(
-        f"""def f({', '.join(params)}): pass""", "<string>", "exec"
-    )
+    func_code = compile(f"""def f({', '.join(params)}): pass""", "<string>", "exec")
     return types.FunctionType(func_code.co_consts[0], {}, "f")
 
 
@@ -18,13 +16,7 @@ class Test_adapt(unittest.TestCase):
 
         self.assertEqual(f([1, 2, 3], object()), (1, 2, 3))
 
-        @functools.adapt(
-            ["a", "b"], kwargs={
-                "a": "a.0",
-                "b": "a.1",
-                "c": "a.2"
-            }
-        )
+        @functools.adapt(["a", "b"], kwargs={"a": "a.0", "b": "a.1", "c": "a.2"})
         def f(a, b, c):
             return (a, b, c)
 

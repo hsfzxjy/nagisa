@@ -34,9 +34,7 @@ Matched = namedtuple(
 )
 ParamsSpecType = List[Union[str, type(Ellipsis)]]
 
-_param_spec_regexp = re.compile(
-    r"^(?P<names>[\w\s\|]+)\s*(?P<optional>\?)?|(?P<placeholder>\*)$"
-)
+_param_spec_regexp = re.compile(r"^(?P<names>[\w\s\|]+)\s*(?P<optional>\?)?|(?P<placeholder>\*)$")
 
 
 def _parse_param_spec(spec_item: str) -> Optional[_ParsedParamSpec]:
@@ -133,13 +131,10 @@ def match_spec(
     fail_flag = fail_flag or (not has_remaining and param_ptr != L_param)
 
     if fail_flag:
-        raise RuntimeError(
-            f"Param list {params!r} can not match spec {spec!r}."
-        )
+        raise RuntimeError(f"Param list {params!r} can not match spec {spec!r}.")
 
     return Matched(
         remaining,
         adapter_signature,
-        adapter_args,        
+        adapter_args,
     )
-

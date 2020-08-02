@@ -75,8 +75,7 @@ class TestImmutableList(unittest.TestCase):
         ]
 
         for stmt in cases:
-            with self.assertRaises(RuntimeError,
-                                   msg=f'{stmt!r} should failed'):
+            with self.assertRaises(RuntimeError, msg=f'{stmt!r} should failed'):
                 exec(stmt)
 
     def test_valid(self):
@@ -100,8 +99,7 @@ class TestImmutableList(unittest.TestCase):
             ['repr(lst)', repr([1, 2, 3])],
             ['list(reversed(lst))', [3, 2, 1]],
             ['4 * lst', [1, 2, 3] * 4],
-            ['sys.getsizeof(lst)',
-             sys.getsizeof([1, 2, 3])],
+            ['sys.getsizeof(lst)', sys.getsizeof([1, 2, 3])],
             ['str(lst)', str([1, 2, 3])],
             ['lst.copy()', [1, 2, 3]],
             ['lst.count(1)', 1],
@@ -173,8 +171,7 @@ class TestMutableList(unittest.TestCase):
             ['repr(lst)', repr([1, 2, 3])],
             ['list(reversed(lst))', [3, 2, 1]],
             ['4 * lst', [1, 2, 3] * 4],
-            ['sys.getsizeof(lst)',
-             sys.getsizeof([1, 2, 3])],
+            ['sys.getsizeof(lst)', sys.getsizeof([1, 2, 3])],
             ['str(lst)', str([1, 2, 3])],
             ['lst.copy()', [1, 2, 3]],
             ['lst.count(1)', 1],

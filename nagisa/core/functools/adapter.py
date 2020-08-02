@@ -45,17 +45,14 @@ def _accessor_fragment(accessor: Any, used_names: Set[str]) -> str:
         }[T].format(', '.join(elements))
     elif T is dict:
         elements = (
-            '{!r}: {}'.format(k, _accessor_fragment(v, used_names))
-            for k, v in accessor.items()
+            '{!r}: {}'.format(k, _accessor_fragment(v, used_names)) for k, v in accessor.items()
         )
         return '{{{}}}'.format(', '.join(elements))
     else:
         raise RuntimeError(f'Unknown accessor {accessor!r}')
 
 
-def _arg_fragment(
-    accessor: Any, used_names: Set[str], keyword: Optional[str] = None
-) -> str:
+def _arg_fragment(accessor: Any, used_names: Set[str], keyword: Optional[str] = None) -> str:
     result = "" if keyword is None else f"{keyword}="
     return result + _accessor_fragment(accessor, used_names)
 
@@ -66,10 +63,7 @@ def _call_func_fragment(mapping: _ParsedAdapterMapping) -> Set[str]:
     return ", ".join(
         itertools.chain(
             (_arg_fragment(x, used_names) for x in mapping.args),
-            (
-                _arg_fragment(x, used_names, k)
-                for k, x in mapping.kwargs.items()
-            ),
+            (_arg_fragment(x, used_names, k) for k, x in mapping.kwargs.items()),
         )
     ), used_names
 
@@ -84,9 +78,7 @@ def _check_accessor(accessor: Any) -> bool:
     return False
 
 
-def _parse_adapter_mapping(
-    args: Optional[List], kwargs: Optional[Dict]
-) -> _ParsedAdapterMapping:
+def _parse_adapter_mapping(args: Optional[List], kwargs: Optional[Dict]) -> _ParsedAdapterMapping:
     if args is None:
         args = []
     else:
@@ -106,6 +98,7 @@ def _parse_adapter_mapping(
             raise AssertionError(f"{name!r} is not a valid identifier.")
 
     return _ParsedAdapterMapping(args=args, kwargs=kwargs)
+
 
 @decorative(name='f')
 def adapt(
@@ -142,13 +135,8 @@ def adapt(
     return new_f
 
 
-
 @decorative(name='f')
-def adapt_spec(
-    spec,
-    f: Optional[Callable] = None,
-    preserve_meta: bool = False
-) -> Callable:
+def adapt_spec(spec, f: Optional[Callable] = None, preserve_meta: bool = False) -> Callable:
     remaining, signature, args = match_spec(spec, f)
     new_f = adapt(signature, f, args=args)
 

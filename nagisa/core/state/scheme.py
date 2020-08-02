@@ -12,9 +12,7 @@ class NodeMeta:
 
     __slots__ = ["attributes", "type", "is_container", "is_alias"]
 
-    def __init__(
-        self, type_=None, attributes=None, is_container=False, is_alias=False
-    ):
+    def __init__(self, type_=None, attributes=None, is_container=False, is_alias=False):
         self.type = type_
         self.attributes = attributes
         self.is_container = is_container
@@ -46,29 +44,18 @@ class SchemeNode:
             return value
 
         if isinstance(value, dict):
-            result = cls(
-                attributes=attributes, is_container=True, parent=parent
-            )
+            result = cls(attributes=attributes, is_container=True, parent=parent)
             for k, v in value.items():
                 result.entry(
                     k,
-                    cls.new_from_primitive(
-                        value=v, parent=result, attributes=attributes
-                    ),
+                    cls.new_from_primitive(value=v, parent=result, attributes=attributes),
                 )
         else:
             result = cls(default=value, parent=parent, attributes=attributes)
 
         return result
 
-    def __init__(
-        self,
-        parent=None,
-        default=None,
-        type_=None,
-        attributes=None,
-        is_container=False
-    ):
+    def __init__(self, parent=None, default=None, type_=None, attributes=None, is_container=False):
         if not is_container:
             assert (
                 default is not None or type_ is not None
@@ -99,9 +86,7 @@ class SchemeNode:
             final_type = None
 
         attributes = self.__class__.__parse_attributes(attributes)
-        self._meta = NodeMeta(
-            type_=final_type, attributes=attributes, is_container=is_container
-        )
+        self._meta = NodeMeta(type_=final_type, attributes=attributes, is_container=is_container)
         self._parent = weakref.ref(parent) if parent is not None else None
 
         self._finalized = False
@@ -153,9 +138,7 @@ class SchemeNode:
     def __check_is_container(self, action: str, value: bool):
         if self._meta.is_container != value:
             raise RuntimeError(
-                "Cannot {} on {} node.".format(
-                    action, "non-container" if value else "container"
-                )
+                "Cannot {} on {} node.".format(action, "non-container" if value else "container")
             )
 
     def __verify_alias(self):
@@ -173,30 +156,20 @@ class SchemeNode:
             while ptr not in self._entries:
                 if ptr not in self._alias_entries:
                     raise RuntimeError(
-                        "Broken alias {} (not an entry).".format(
-                            " -> ".join(visited)
-                        )
+                        "Broken alias {} (not an entry).".format(" -> ".join(visited))
                     )
                 ptr = self._alias_entries[ptr]
                 if ptr in visited:
-                    raise RuntimeError(
-                        "Cyclic alias {}.".format(
-                            " -> ".join(visited + [ptr])
-                        )
-                    )
+                    raise RuntimeError("Cyclic alias {}.".format(" -> ".join(visited + [ptr])))
                 visited.append(ptr)
             self._alias_entries[name] = ptr
 
     def __add_entry(self, name, value, attributes=None):
 
         if name in dir(self):
-            raise RuntimeError(
-                'Cannot use preserved name "{}" as entry.'.format(name)
-            )
+            raise RuntimeError('Cannot use preserved name "{}" as entry.'.format(name))
 
-        node = self.new_from_primitive(
-            value, parent=self, attributes=attributes
-        )
+        node = self.new_from_primitive(value, parent=self, attributes=attributes)
         self._entries[name] = node
         return node
 
@@ -251,9 +224,7 @@ class SchemeNode:
                 host = self._entries[entry_name]
 
         if self._finalized and not host._meta.attributes.writable:
-            raise AttributeError(
-                f"Cannot update read-only entry {host.dotted_path()!r}."
-            )
+            raise AttributeError(f"Cannot update read-only entry {host.dotted_path()!r}.")
 
         if host._meta.is_container:
             if not isinstance(obj, dict):
@@ -263,9 +234,7 @@ class SchemeNode:
 
             extra_entries = set(obj) - set(host._entries)
             if not host._meta.attributes.writable and extra_entries:
-                verbose_extra_entries = ", ".join(
-                    map("{!r}".format, extra_entries)
-                )
+                verbose_extra_entries = ", ".join(map("{!r}".format, extra_entries))
                 raise AttributeError(
                     f"Adding extra entries {verbose_extra_entries} to read-only container {host.dotted_path()!r} is forbidden."
                 )
@@ -278,9 +247,7 @@ class SchemeNode:
                 if name in host._entries:
                     host._entries[name]._update_value(value, action=action)
                 else:
-                    entry = host.__add_entry(
-                        name, value, attributes="writable"
-                    )
+                    entry = host.__add_entry(name, value, attributes="writable")
                     if host._finalized:
                         entry.finalize()
         else:
@@ -316,9 +283,7 @@ class SchemeNode:
         return ".".join(reversed(paths))
 
     def entry(self, name, node):
-        assert name not in self._entries, 'Entry name "{}" already exists.'.format(
-            name
-        )
+        assert name not in self._entries, 'Entry name "{}" already exists.'.format(name)
 
         self.__add_entry(name, node)
         return self
@@ -344,36 +309,28 @@ class SchemeNode:
         self.__check_finalized("create alias", False)
         self.__check_is_container("create alias", True)
 
-        assert (name.isidentifier(
-        )), 'Alias name should be valid Python identifier, got "{}".'.format(
-            name
-        )
-        assert (target.isidentifier(
-        )), 'Alias target should be valid Python identifier, got "{}".'.format(
-            target
-        )
+        assert (name.isidentifier()
+                ), 'Alias name should be valid Python identifier, got "{}".'.format(name)
+        assert (target.isidentifier()
+                ), 'Alias target should be valid Python identifier, got "{}".'.format(target)
 
         self._alias_entries[name] = target
         return self
 
     def to_str(self, level=0, indent_size=2):
         if not self._meta.is_container:
-            return "({}) {}".format(
-                stringify_type(self._meta.type), self._value
-            )
+            return "({}) {}".format(stringify_type(self._meta.type), self._value)
 
         indent = " " * (level * indent_size)
         retstr = ""
-        for key, entry in sorted(self._entries.items(),
-                                 key=lambda x: x[1]._meta.is_container):
+        for key, entry in sorted(self._entries.items(), key=lambda x: x[1]._meta.is_container):
             retstr += "{}{}:".format(indent, key)
             content = entry.to_str(level + 1, indent_size)
             if entry._meta.is_container:
                 retstr += "\n{}".format(content)
             else:
                 retstr += " {}\n".format(content)
-        for src, target in sorted(self._alias_entries.items(),
-                                  key=lambda x: x[0]):
+        for src, target in sorted(self._alias_entries.items(), key=lambda x: x[0]):
             retstr += "{} -> {}\n".format(src, target)
 
         return retstr
@@ -427,9 +384,7 @@ class SchemeNode:
             return key in obj._entries
 
         for directive, value in directives:
-            accessor.modify(
-                self, directive, value, ext_syntax, _attrsetter, _attrchecker
-            )
+            accessor.modify(self, directive, value, ext_syntax, _attrsetter, _attrchecker)
 
         return self
 
@@ -493,8 +448,7 @@ class _class_to_scheme:
 
             entries[name]["default"] = default
 
-        for name, annotation in getattr(template, "__annotations__",
-                                        {}).items():
+        for name, annotation in getattr(template, "__annotations__", {}).items():
             T, attributes, alias = self._parse_annotation(annotation)
 
             if alias is not None:
@@ -505,8 +459,7 @@ class _class_to_scheme:
 
         for name, kwargs in entries.items():
             child_node = (
-                kwargs["default"]
-                if kwargs.get("is_container") else scheme_class(**kwargs)
+                kwargs["default"] if kwargs.get("is_container") else scheme_class(**kwargs)
             )
             node.entry(name, child_node)
         for name, alias in alias_entries.items():

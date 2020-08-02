@@ -114,8 +114,7 @@ class BaseMeterGroup(metaclass=BaseMeterGroupMeta):
                 mapping = {'args': signature}
             elif isinstance(mapping, list):
                 mapping = {'args': mapping}
-            elif (isinstance(mapping, dict)
-                  and not set(mapping).issubset({'args', 'kwargs'})):
+            elif (isinstance(mapping, dict) and not set(mapping).issubset({'args', 'kwargs'})):
                 mapping = {'kwargs': mapping}
 
             assert isinstance(init, _meter_initializer_types)
@@ -149,10 +148,7 @@ class BaseMeterGroup(metaclass=BaseMeterGroupMeta):
 
     def compute(self, group_name=None):
         if group_name is None:
-            return {
-                group_name: self.compute(group_name)
-                for group_name in self.groups
-            }
+            return {group_name: self.compute(group_name) for group_name in self.groups}
 
         result = {}
         for meter_key, meter in self.groups[group_name].items():
@@ -180,10 +176,7 @@ class DefaultMeterGroup(BaseMeterGroup):
     def update_loss(self, inputs):
 
         if not self.has_group("loss"):
-            spec = {
-                key: ["builtin.Avg", [f"i.{key}"], self.Scope.DEFAULT]
-                for key in inputs
-            }
+            spec = {key: ["builtin.Avg", [f"i.{key}"], self.Scope.DEFAULT] for key in inputs}
             self.add_group("loss", ["i"], spec)
 
         self.update("loss", i=inputs)
@@ -191,10 +184,7 @@ class DefaultMeterGroup(BaseMeterGroup):
 
     def update_time(self, inputs):
         if not self.has_group("time"):
-            spec = {
-                key: ["builtin.Avg", [f"i.{key}"], self.Scope.DEFAULT]
-                for key in inputs
-            }
+            spec = {key: ["builtin.Avg", [f"i.{key}"], self.Scope.DEFAULT] for key in inputs}
             self.add_group("time", ["i"], spec)
 
         self.update("time", i=inputs)

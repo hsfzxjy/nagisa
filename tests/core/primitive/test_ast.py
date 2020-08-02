@@ -21,9 +21,7 @@ class Test_parse_type(unittest.TestCase):
         ]
 
         for stmt, target in cases:
-            self.assertEqual(
-                prim_ast.parse_type(str_to_ast_node(stmt)), target
-            )
+            self.assertEqual(prim_ast.parse_type(str_to_ast_node(stmt)), target)
 
     def test_fail(self):
         cases = [
@@ -32,9 +30,7 @@ class Test_parse_type(unittest.TestCase):
             "complex",
         ]
         for stmt in cases:
-            self.assertIs(
-                prim_ast.parse_type(str_to_ast_node(stmt)), prim_ast.Malformed
-            )
+            self.assertIs(prim_ast.parse_type(str_to_ast_node(stmt)), prim_ast.Malformed)
 
 
 class Test_node_to_object(unittest.TestCase):
@@ -54,9 +50,7 @@ class Test_node_to_object(unittest.TestCase):
             ("[12,False]", [12, False]),
         ]
         for stmt, target in cases:
-            self.assertEqual(
-                prim_ast.node_to_object(str_to_ast_node(stmt)), target
-            )
+            self.assertEqual(prim_ast.node_to_object(str_to_ast_node(stmt)), target)
 
     def test_fail(self):
         cases = [
@@ -66,7 +60,4 @@ class Test_node_to_object(unittest.TestCase):
             "{1,2,3}",
         ]
         for stmt in cases:
-            self.assertIs(
-                prim_ast.node_to_object(str_to_ast_node(stmt)),
-                prim_ast.Malformed
-            )
+            self.assertIs(prim_ast.node_to_object(str_to_ast_node(stmt)), prim_ast.Malformed)

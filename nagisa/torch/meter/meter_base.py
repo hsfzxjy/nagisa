@@ -72,8 +72,7 @@ class MeterBase(metaclass=MeterMeta):
         expected_methods = ("reset", "update", "compute")
         if cls is MeterBase:
             for B in C.__mro__:
-                if all(callable(B.__dict__.get(fname))
-                       for fname in expected_methods):
+                if all(callable(B.__dict__.get(fname)) for fname in expected_methods):
                     return True
             return False
         return NotImplemented

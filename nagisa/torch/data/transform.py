@@ -13,14 +13,10 @@ __all__ = [
 ]
 
 trans_seq = ConfigValue(
-    f"{__name__}.trans_seq",
-    func_spec=["cfg|c?", "meta|m?"],
-    default=lambda: []
+    f"{__name__}.trans_seq", func_spec=["cfg|c?", "meta|m?"], default=lambda: []
 )
 trans_kwargs = ConfigValue(
-    f"{__name__}.trans_kwargs",
-    func_spec=["cfg|c?", "meta|m?"],
-    default=lambda: {}
+    f"{__name__}.trans_kwargs", func_spec=["cfg|c?", "meta|m?"], default=lambda: {}
 )
 
 
@@ -38,9 +34,7 @@ class BaseTransform(object):
     def __init__(self, *, cfg=None, meta=None, **kwargs):
         self._cfg = cfg
         self.meta = meta
-        kwargs = SchemeNode.from_class(
-            self._kwargs_template,
-        )().merge_from_dict(kwargs)
+        kwargs = SchemeNode.from_class(self._kwargs_template, )().merge_from_dict(kwargs)
         self._check_kwargs(kwargs)
         self.kwargs = kwargs.finalize()
 
@@ -99,9 +93,7 @@ def apply_transform(cfg, meta, item_dict):
             else:
                 kwargs = {}
 
-            transforms.append(
-                Transform[trans_key](cfg=cfg, meta=meta, **kwargs)
-            )
+            transforms.append(Transform[trans_key](cfg=cfg, meta=meta, **kwargs))
 
         __cache.set(cache_key, transforms)
 

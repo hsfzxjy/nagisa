@@ -11,12 +11,8 @@ class TorchTestCase(unittest.TestCase):
         self.addTypeEqualityFunc(np.ndarray, "assertArrayEqual")
 
     def assertTensorEqual(self, t1: torch.Tensor, t2: torch.Tensor, msg=None):
-        self.assertIsInstance(
-            t1, torch.Tensor, "First argument is not a Tensor"
-        )
-        self.assertIsInstance(
-            t2, torch.Tensor, "Second argument is not a Tensor"
-        )
+        self.assertIsInstance(t1, torch.Tensor, "First argument is not a Tensor")
+        self.assertIsInstance(t2, torch.Tensor, "Second argument is not a Tensor")
 
         standardMsg = ""
         if t1.device != t2.device:
@@ -31,12 +27,8 @@ class TorchTestCase(unittest.TestCase):
         self.fail(self._formatMessage(msg, standardMsg))
 
     def assertArrayEqual(self, t1, t2, msg=None):
-        self.assertIsInstance(
-            t1, np.ndarray, "First argument is not numpy.ndarray"
-        )
-        self.assertIsInstance(
-            t2, np.ndarray, "Second argument is not numpy.ndarray"
-        )
+        self.assertIsInstance(t1, np.ndarray, "First argument is not numpy.ndarray")
+        self.assertIsInstance(t2, np.ndarray, "Second argument is not numpy.ndarray")
 
         standardMsg = ""
         if t1.shape != t2.shape:

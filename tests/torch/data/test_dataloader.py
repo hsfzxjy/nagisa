@@ -78,13 +78,11 @@ class TestDataLoader(BaseDatasetTestCase):
         chunk_size = 4
         for i in range(0, 100, chunk_size):
             items = torch.tensor([i + j for j in range(chunk_size)])
-            expected.append(
-                {
-                    "item1": items,
-                    "item2": items.unsqueeze(-1),
-                    "item3": items,
-                }
-            )
+            expected.append({
+                "item1": items,
+                "item2": items.unsqueeze(-1),
+                "item3": items,
+            })
         loader = s.DataLoader("mock", self.dataset, batch_size=4)
         self.assertItemsEqual(list(loader), expected)
 
@@ -93,14 +91,10 @@ class TestDataLoader(BaseDatasetTestCase):
         chunk_size = 4
         for i in range(0, 100, chunk_size):
             items = torch.tensor([i + j for j in range(chunk_size)])
-            expected.append(
-                {
-                    "item1": items,
-                    "item2": items,
-                    "item3": items,
-                }
-            )
+            expected.append({
+                "item1": items,
+                "item2": items,
+                "item3": items,
+            })
 
-        self.assertItemsEqual(
-            list(self.dataset.as_loader(batch_size=4)), expected
-        )
+        self.assertItemsEqual(list(self.dataset.as_loader(batch_size=4)), expected)
