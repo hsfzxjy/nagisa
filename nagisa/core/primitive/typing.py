@@ -3,12 +3,18 @@ import ast
 from nagisa.core.primitive.malformed import Malformed
 
 __all__ = [
-    "is_acceptable_type",
+    "elemT",
+    "unwrapT",
+    "unnullT",
+    "unlistT",
+    "is_nullT",
+    "is_listT",
+    "is_acceptableT",
     "compatible_with",
     "get_default_value",
-    "infer_type",
-    "check_type",
-    "stringify_type",
+    "inferT",
+    "checkT",
+    "strT",
     "cast",
     "str_to_object",
 ]
@@ -27,34 +33,34 @@ def _is_con_type(x):
     return isinstance(x, (list, tuple))
 
 
-def _elem(T):
+def elemT(T):
     while _is_con_type(T):
-        T = _unwrap(T)
+        T = unwrapT(T)
 
     return T
 
 
-def _unwrap(T):
+def unwrapT(T):
     return T[0] if _is_con_type(T) else T
 
 
-def _unnull(T):
-    return _unwrap(T) if _is_nullable(T) else T
+def unnullT(T):
+    return unwrapT(T) if is_nullT(T) else T
 
 
-def _unlist(T):
-    return _unwrap(T) if _is_list(T) else T
+def unlistT(T):
+    return unwrapT(T) if is_listT(T) else T
 
 
-def _is_nullable(T) -> bool:
+def is_nullT(T) -> bool:
     return isinstance(T, tuple)
 
 
-def _is_list(T) -> bool:
+def is_listT(T) -> bool:
     return isinstance(T, list)
 
 
-def is_acceptable_type(T, *, raise_exc=False) -> bool:
+def is_acceptableT(T, *, raise_exc=False) -> bool:
     result = T in _ACCEPTED_TYPES
     if not result and raise_exc:
         raise TypeError(f'Unsupported type {T!r}')
@@ -69,7 +75,7 @@ def compatible_with(T1, T2) -> bool:
         return True
 
     if T1 is NoneType:
-        return T2 is NoneType or _is_nullable(T2)
+        return T2 is NoneType or is_nullT(T2)
 
     if T1 is Malformed or T2 is Malformed:
         return False
@@ -80,11 +86,11 @@ def compatible_with(T1, T2) -> bool:
     if T1 is int and T2 is float:
         return True
 
-    if _is_nullable(T2):
-        return compatible_with(T1, _unwrap(T2))
+    if is_nullT(T2):
+        return compatible_with(T1, unwrapT(T2))
 
-    if _is_list(T1) and _is_list(T2):
-        return T1 == [] or compatible_with(_unwrap(T1), _unwrap(T2))
+    if is_listT(T1) and is_listT(T2):
+        return T1 == [] or compatible_with(unwrapT(T1), unwrapT(T2))
 
     return False
 
@@ -110,34 +116,34 @@ def topper(T1, T2):
     elif T1 is NoneType or T2 is NoneType:
         if T2 is NoneType:
             T1, T2 = T2, T1
-        return T2 if _is_nullable(T2) else (T2, None)
-    elif _is_nullable(T1) or _is_nullable(T2):
-        inner_T1, inner_T2 = map(_unnull, (T1, T2))
+        return T2 if is_nullT(T2) else (T2, None)
+    elif is_nullT(T1) or is_nullT(T2):
+        inner_T1, inner_T2 = map(unnullT, (T1, T2))
         topper_inner = topper(inner_T1, inner_T2)
         return (topper_inner, None) if topper_inner is not Malformed else Malformed
-    elif _is_list(T1) and _is_list(T2):
+    elif is_listT(T1) and is_listT(T2):
         if T1 == T2 == []:
             return []
         elif T1 == []:
             return T2
         elif T2 == []:
             return T1
-        topper_elem = topper(_unlist(T1), _unlist(T2))
-        return [topper_elem] if topper_elem is not Malformed else Malformed
+        topperelemT = topper(unlistT(T1), unlistT(T2))
+        return [topperelemT] if topperelemT is not Malformed else Malformed
     else:
         return Malformed
 
 
 def get_default_value(T):
-    if _is_nullable(T):
+    if is_nullT(T):
         return None
-    elif _is_list(T):
+    elif is_listT(T):
         return []
     else:
         return T()
 
 
-def infer_type(value, *, allow_empty_list=False, expect_non_list=False):
+def inferT(value, *, allow_empty_list=False, expect_non_list=False):
     type_ = type(value)
     if type_ in (list, tuple):
         if expect_non_list:
@@ -150,7 +156,7 @@ def infer_type(value, *, allow_empty_list=False, expect_non_list=False):
 
         base_type = AnyType
         for x in value:
-            type_of_x = infer_type(x, expect_non_list=True)
+            type_of_x = inferT(x, expect_non_list=True)
             base_type = topper(base_type, type_of_x)
 
         if base_type in {AnyType, NoneType, Malformed}:
@@ -161,34 +167,37 @@ def infer_type(value, *, allow_empty_list=False, expect_non_list=False):
     return type_
 
 
-def check_type(value, T, *, check=True) -> bool:
+def checkT(value, T, *, check=True) -> bool:
     if check:
-        assert is_acceptable_type(T)
+        assert is_acceptableT(T)
 
-    return compatible_with(infer_type(value, allow_empty_list=True), T)
+    return compatible_with(inferT(value, allow_empty_list=True), T)
 
 
-def stringify_type(T, *, check=True) -> str:
+def strT(T, *, check=True) -> str:
     if check:
-        assert is_acceptable_type(T)
+        assert is_acceptableT(T)
 
-    if _is_nullable(T):
-        return stringify_type(_unwrap(T), check=False) + '?'
-    elif _is_list(T):
-        return '[' + stringify_type(_unwrap(T), check=False) + ']'
+    if is_nullT(T):
+        return strT(unwrapT(T), check=False) + '?'
+    elif is_listT(T):
+        return '[' + strT(unwrapT(T), check=False) + ']'
     else:
         return T.__name__
 
 
-def cast(value, T, *, check=True):
+def cast(value, T, *, check=True, raise_exc=True):
     if check:
-        assert is_acceptable_type(T)
+        assert is_acceptableT(T)
 
     if value is Malformed:
         return value
 
-    if not check_type(value, T, check=False):
-        raise TypeError("Cannot cast {!r} into {!r}.".format(value, T))
+    if not checkT(value, T, check=False):
+        if raise_exc:
+            raise TypeError(f"Cannot cast {value!r} into {strT(T)}.")
+        else:
+            return Malformed
 
     if T is AnyType:
         return value
@@ -196,11 +205,11 @@ def cast(value, T, *, check=True):
     if value is None:
         return value
 
-    if _is_nullable(T):
-        T = _unwrap(T)
+    if is_nullT(T):
+        T = unwrapT(T)
 
-    if _is_list(T):
-        base_type = _unlist(T)
+    if is_listT(T):
+        base_type = unlistT(T)
         return [cast(x, base_type, check=False) for x in value]
 
     return T(value)

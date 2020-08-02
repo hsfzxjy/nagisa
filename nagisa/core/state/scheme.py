@@ -64,14 +64,14 @@ class SchemeNode:
             if default is None:
                 final_type = type_
             elif type_ is None:
-                final_type = infer_type(default)
+                final_type = inferT(default)
             else:
-                assert check_type(
+                assert checkT(
                     default, type_
                 ), f"Value {default!r} is incompatible with type {type_!r}"
                 final_type = type_
 
-            is_acceptable_type(final_type, raise_exc=True)
+            is_acceptableT(final_type, raise_exc=True)
             if default is None:
                 default = get_default_value(final_type)
             self._value = proxy(
@@ -251,7 +251,7 @@ class SchemeNode:
                     if host._finalized:
                         entry.finalize()
         else:
-            if not check_type(obj, host._meta.type):
+            if not checkT(obj, host._meta.type):
                 raise TypeError(
                     f"Cannot update {host._meta.type!r} type entry {host.dotted_path()!r} with value {obj!r}."
                 )
@@ -319,7 +319,7 @@ class SchemeNode:
 
     def to_str(self, level=0, indent_size=2):
         if not self._meta.is_container:
-            return "({}) {}".format(stringify_type(self._meta.type), self._value)
+            return "({}) {}".format(strT(self._meta.type), self._value)
 
         indent = " " * (level * indent_size)
         retstr = ""
@@ -476,7 +476,7 @@ class _class_to_scheme:
     def _parse_annotation(self, annotations):
         if isinstance(annotations, str):
             return None, None, annotations
-        elif is_acceptable_type(annotations):
+        elif is_acceptableT(annotations):
             return annotations, None, None
         elif isinstance(annotations, list):
             assert len(annotations) > 0
@@ -484,7 +484,7 @@ class _class_to_scheme:
             raise TypeError(f"Annotations {annotations!r} cannot be parsed.")
 
         T = None
-        if is_acceptable_type(annotations[0]):
+        if is_acceptableT(annotations[0]):
             T = annotations[0]
             attributes = annotations[1:]
         else:

@@ -47,8 +47,8 @@ class SwitchableList(ProxyBase):
         self.__host__ = weakref.ref(host) if host is not None else None
         self.__mutable__ = mutable
         self.T = T
-        self.elem_T = typing._elem(T)
-        self.T_str = typing.stringify_type(T)
+        self.elem_T = typing.elemT(T)
+        self.T_str = typing.strT(T)
 
     def as_primitive(self):
         return self.__lstobj__.copy()
@@ -73,7 +73,7 @@ class SwitchableList(ProxyBase):
     @wraps(list.append)
     def append(self, object):
         self._ensure_mutable()
-        if not typing.check_type(object, self.elem_T):
+        if not typing.checkT(object, self.elem_T):
             raise TypeError(f'Cannot append {object!r} to {self.T_str} type list')
 
         self.__lstobj__.append(object)
@@ -81,7 +81,7 @@ class SwitchableList(ProxyBase):
     @wraps(list.extend)
     def extend(self, iterable):
         self._ensure_mutable()
-        if not typing.check_type(iterable, self.T):
+        if not typing.checkT(iterable, self.T):
             raise TypeError(f'Cannot extend {iterable!r} to {self.T_str} type list')
 
         self.__lstobj__.extend(iterable)
@@ -89,7 +89,7 @@ class SwitchableList(ProxyBase):
     @wraps(list.insert)
     def insert(self, index, object):
         self._ensure_mutable()
-        if not typing.check_type(object, self.elem_T):
+        if not typing.checkT(object, self.elem_T):
             raise TypeError(f'Cannot insert {object!r} into {self.T_str} type list')
 
         self.__lstobj__.insert(index, object)

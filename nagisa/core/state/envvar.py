@@ -9,35 +9,56 @@ import logging
 from nagisa.core.state.scheme import SchemeNode
 from nagisa.core import primitive
 from nagisa.core.primitive import ast as prim_ast
-from nagisa.core.primitive.typing import str_to_object, cast
+from nagisa.core.primitive import typing
 from nagisa.core.misc.io import resolve_until_exists
 
 logger = logging.getLogger(__name__)
 
 
 def object_from_envvar(name, T, default=None):
-    if name not in os.environ:
-        return default
+    typing.is_acceptableT(T, raise_exc=True)
 
-    obj = cast(str_to_object(os.environ[name]), T)
-    if obj is primitive.Malformed and T is str:
-        return os.environ[name]
+    hit = False
+    if _EnvvarRegistry._instance is not None and _EnvvarRegistry._instance._store is not None:
+        store = _EnvvarRegistry._instance._store
+        try:
+            env_value = store.value_by_path(name)
+            hit = True
+        except AttributeError:
+            pass
+
+    if not hit:
+        if name not in os.environ:
+            return default
+        env_value = os.getenv(name)
+
+    if not isinstance(env_value, str):
+        obj = typing.cast(env_value, T, check=False, raise_exc=False)
+    else:
+        obj = typing.cast(typing.str_to_object(env_value), T, check=False, raise_exc=False)
+
+    if obj is primitive.Malformed:
+        if typing.unnullT(T) is str:
+            return env_value
+        else:
+            raise ValueError(f'Cannot cast {env_value!r} into {typing.strT(T)}')
 
     return obj
 
 
 class _EnvvarRegistry:
 
-    __instance = None
+    _instance = None
 
     def __new__(cls):
-        if cls.__instance is not None:
-            return __instance
-        cls.__instance = object.__new__(cls)
+        if cls._instance is not None:
+            return _instance
+        cls._instance = object.__new__(cls)
 
-        cls.__instance._store = None
+        return cls._instance
 
-        return cls.__instance
+    def __init__(self):
+        self._store = None
 
     def _parse_Call(self, node: ast.Call, func_names: [str]):
         if (not isinstance(node.func, ast.Name) or node.func.id not in func_names):
