@@ -14,11 +14,11 @@ __all__ = [
 
 class ResourceItemRegistry(MultiEntryConditionalFunctionRegistry):
 
-    _function_spec = ["cfg | c?", "meta | m?", ...]
-    _when_spec = ["cfg | c?", "meta | m?"]
+    _func_spec_ = ["cfg | c?", "meta | m?", ...]
+    _when_spec_ = ["cfg | c?", "meta | m?"]
 
-    def _check_value(self, key, f):
-        new_f = super()._check_value(key, f)
+    def _check_value_(self, key, f):
+        new_f = super()._check_value_(key, f)
         deps = new_f.__remaining__
         if deps and deps[0] == "id":
             scope = Scope.LOCAL
@@ -34,8 +34,8 @@ class ResourceItemRegistry(MultiEntryConditionalFunctionRegistry):
 class CollateRegistry(MultiEntryConditionalFunctionRegistry):
 
     __DEFAULT_NAME = "default"
-    _function_spec = ["cfg | c?", "name | n?", "*"]
-    _when_spec = ["cfg | c?", "name | n?"]
+    _func_spec_ = ["cfg | c?", "name | n?", "*"]
+    _when_spec_ = ["cfg | c?", "name | n?"]
 
     def select(self, key, cfg):
         super_select = super().select

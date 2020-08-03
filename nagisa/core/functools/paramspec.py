@@ -24,21 +24,15 @@ def _check_static_and_get_params(f: Callable) -> List[str]:
     return list(params)
 
 
-_ParsedParamSpec = namedtuple(
-    "_ParsedParamSpec",
-    ("name", "aliases", "optional", "placeholder"),
-)
-Matched = namedtuple(
-    'Matched',
-    ('remaining', 'adapter_signature', 'adapter_args'),
-)
+_ParsedParamSpec = namedtuple("_ParsedParamSpec", ("name", "aliases", "optional", "placeholder"))
+Matched = namedtuple('Matched', ('remaining', 'adapter_signature', 'adapter_args'))
 ParamsSpecType = List[Union[str, type(Ellipsis)]]
 
-_param_spec_regexp = re.compile(r"^(?P<names>[\w\s\|]+)\s*(?P<optional>\?)?|(?P<placeholder>\*)$")
+_param_spec_pattern = re.compile(r"^(?P<names>[\w\s\|]+)\s*(?P<optional>\?)?|(?P<placeholder>\*)$")
 
 
 def _parse_param_spec(spec_item: str) -> Optional[_ParsedParamSpec]:
-    matched = _param_spec_regexp.match(spec_item)
+    matched = _param_spec_pattern.match(spec_item)
 
     if matched is None:
         return None
@@ -58,10 +52,14 @@ def _parse_param_spec(spec_item: str) -> Optional[_ParsedParamSpec]:
     )
 
 
-def match_spec(
-    spec: ParamsSpecType,
-    f: Callable,
-) -> Matched:
+def _placeholder_list():
+    counter = 0
+    while True:
+        yield f"_{counter}"
+        counter += 1
+
+
+def match_spec(spec: ParamsSpecType, f: Callable) -> Matched:
     params = _check_static_and_get_params(f)
 
     parsed_specs = []
@@ -82,7 +80,8 @@ def match_spec(
     param_ptr = spec_ptr = 0
     L_spec = len(parsed_specs)
     L_param = len(params)
-    placeholder_name = "_"
+    placeholder_generator = _placeholder_list()
+    placeholder_name = next(placeholder_generator)
     used_names = set(x.name for x in parsed_specs) | set(params)
     fail_flag = False
     while spec_ptr < L_spec and param_ptr < L_param and not fail_flag:
@@ -91,7 +90,7 @@ def match_spec(
 
         if spec_item.placeholder:
             while placeholder_name in used_names:
-                placeholder_name += "_"
+                placeholder_name = next(placeholder_generator)
 
             used_names.add(placeholder_name)
             matched_name = placeholder_name
@@ -118,7 +117,7 @@ def match_spec(
     remaining = params[param_ptr:]
     for name in remaining:
         while placeholder_name in used_names:
-            placeholder_name += "_"
+            placeholder_name = next(placeholder_generator)
         used_names.add(placeholder_name)
 
         adapter_signature.append(placeholder_name)
@@ -131,10 +130,6 @@ def match_spec(
     fail_flag = fail_flag or (not has_remaining and param_ptr != L_param)
 
     if fail_flag:
-        raise RuntimeError(f"Param list {params!r} can not match spec {spec!r}.")
+        raise RuntimeError(f"Param list {params!r} can not match spec {spec!r}")
 
-    return Matched(
-        remaining,
-        adapter_signature,
-        adapter_args,
-    )
+    return Matched(remaining, adapter_signature, adapter_args)

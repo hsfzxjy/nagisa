@@ -46,9 +46,9 @@ class SwitchableList(ProxyBase):
         self.__lstobj__ = lstobj
         self.__host__ = weakref.ref(host) if host is not None else None
         self.__mutable__ = mutable
-        self.T = T
-        self.elem_T = typing.elemT(T)
-        self.T_str = typing.strT(T)
+        self.__T__ = T
+        self.__elem_T__ = typing.elemT(T)
+        self.__T_str__ = typing.strT(T)
 
     def as_primitive(self):
         return self.__lstobj__.copy()
@@ -66,31 +66,31 @@ class SwitchableList(ProxyBase):
 
         self.__mutable__ = value
 
-    def _ensure_mutable(self):
+    def _ensure_mutable_(self):
         if not self.__mutable__:
             raise RuntimeError('Cannot perform this action on immutable list')
 
     @wraps(list.append)
     def append(self, object):
-        self._ensure_mutable()
-        if not typing.checkT(object, self.elem_T):
-            raise TypeError(f'Cannot append {object!r} to {self.T_str} type list')
+        self._ensure_mutable_()
+        if not typing.checkT(object, self.__elem_T__):
+            raise TypeError(f'Cannot append {object!r} to {self.__T_str__} type list')
 
         self.__lstobj__.append(object)
 
     @wraps(list.extend)
     def extend(self, iterable):
-        self._ensure_mutable()
-        if not typing.checkT(iterable, self.T):
-            raise TypeError(f'Cannot extend {iterable!r} to {self.T_str} type list')
+        self._ensure_mutable_()
+        if not typing.checkT(iterable, self.__T__):
+            raise TypeError(f'Cannot extend {iterable!r} to {self.__T_str__} type list')
 
         self.__lstobj__.extend(iterable)
 
     @wraps(list.insert)
     def insert(self, index, object):
-        self._ensure_mutable()
-        if not typing.checkT(object, self.elem_T):
-            raise TypeError(f'Cannot insert {object!r} into {self.T_str} type list')
+        self._ensure_mutable_()
+        if not typing.checkT(object, self.__elem_T__):
+            raise TypeError(f'Cannot insert {object!r} into {self.__T_str__} type list')
 
         self.__lstobj__.insert(index, object)
 
@@ -102,7 +102,7 @@ class SwitchableList(ProxyBase):
 
     def _make_mutablility_check_method(method):
         def _method(self, *args, **kwargs):
-            self._ensure_mutable()
+            self._ensure_mutable_()
             return method(self.__lstobj__, *args, **kwargs)
 
         return _method

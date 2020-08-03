@@ -21,24 +21,24 @@ DatasetMeta = collections.namedtuple("DatasetMeta", ("name", "split"))
 
 class Dataset(torch_Dataset):
     def __init__(self, cfg, name, split):
-        self._cfg = cfg
-        self.meta = DatasetMeta(name=name, split=split)
-        self.data_resolver = DataResolver(cfg, self.meta)
-        self.id_list = self.data_resolver.get_id_list()
+        self._cfg_ = cfg
+        self._meta_ = DatasetMeta(name=name, split=split)
+        self._data_resolver_ = DataResolver(cfg, self._meta_)
+        self._id_list_ = self._data_resolver_.get_id_list()
 
     cfg = cfg_property
 
     def __len__(self):
-        return len(self.id_list)
+        return len(self._id_list_)
 
     def __getitem__(self, index):
-        id = self.id_list[index]
+        id = self._id_list_[index]
 
         items_dict = {}
-        for item_key in item_keys.value(self.cfg, self.meta):
-            items_dict[item_key] = self.data_resolver.get_item(id, item_key)
+        for item_key in item_keys.value(self.cfg, self._meta_):
+            items_dict[item_key] = self._data_resolver_.get_item(id, item_key)
 
-        apply_transform(self.cfg, self.meta, items_dict)
+        apply_transform(self.cfg, self._meta_, items_dict)
 
         return items_dict
 

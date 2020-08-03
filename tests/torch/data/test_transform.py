@@ -22,14 +22,14 @@ class BaseTestCase(unittest.TestCase):
 class TestTransformClass(BaseTestCase):
     def test_basic(self):
         class Square(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** 2
 
         self.assertEqual(Square()({"num": 10, "x": 10}), {"num": 100, "x": 10})
 
     def test_default(self):
         class Square(self.s.BaseTransform):
-            def _default(self, n, k, _):
+            def _default_(self, n, k, _):
                 if k == "num":
                     return n ** 2
                 else:
@@ -42,7 +42,7 @@ class TestTransformClass(BaseTestCase):
             class _kwargs_template:
                 pow: int = 2
 
-            def _t_num(self, n, *_):
+            def _t_num_(self, n, *_):
                 return n ** self.kwargs.pow
 
         self.assertEqual(Pow()({"num": 10}), {"num": 100})
@@ -53,20 +53,20 @@ class TestTransformClass(BaseTestCase):
             class _kwargs_template:
                 pow: int = 2
 
-            def _check_kwargs(self, kwargs):
+            def _check_kwargs_(self, kwargs):
                 kwargs.pow = max(-2, kwargs.pow)
 
-            def _t_num(self, n, *_):
+            def _t_num_(self, n, *_):
                 return n ** self.kwargs.pow
 
         self.assertEqual(Pow(pow=-10)({"num": 10}), {"num": 0.01})
 
     def test_use_me(self):
         class Sqrt(self.s.BaseTransform):
-            def _use_me(self, items_dict):
+            def _use_me_(self, items_dict):
                 return items_dict["num"] >= 0
 
-            def _t_num(self, n, *_):
+            def _t_num_(self, n, *_):
                 return n ** 0.5
 
         self.assertEqual(Sqrt()({"num": -1}), {"num": -1})
@@ -74,7 +74,7 @@ class TestTransformClass(BaseTestCase):
 
     def test_given_cfg(self):
         class Pow(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** self.cfg.pow
 
         class _MockCfg:
@@ -84,7 +84,7 @@ class TestTransformClass(BaseTestCase):
 
     def test_global_cfg(self):
         class Pow(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** self.cfg.pow
 
         from nagisa.core.state.config import ConfigNode
@@ -101,14 +101,14 @@ class TestTransformClass(BaseTestCase):
 class TestApply(BaseTestCase):
     def test_basic_seq(self):
         class Square(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** 2
 
         class Sqrt(self.s.BaseTransform):
-            def _use_me(self, items_dict):
+            def _use_me_(self, items_dict):
                 return items_dict["num"] >= 0
 
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** 0.5
 
         _seq = []
@@ -124,7 +124,7 @@ class TestApply(BaseTestCase):
 
     def test_init_with_custom_key(self):
         class Square(self.s.BaseTransform, key="sqr"):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** 2
 
         self.s.trans_seq.set(["sqr"])
@@ -134,11 +134,11 @@ class TestApply(BaseTestCase):
 
     def test_kwargs_mapping(self):
         class Pow(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** self.kwargs.pow
 
         class Root(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** (1 / self.kwargs.pow)
 
         self.s.trans_seq.set(["pow", "root"])
@@ -161,11 +161,11 @@ class TestApply(BaseTestCase):
 
     def test_kwargs_mapping_static(self):
         class Pow(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** self.kwargs.pow
 
         class Root(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** (1 / self.kwargs.pow)
 
         self.s.trans_seq.set(["pow", "root"])
@@ -176,11 +176,11 @@ class TestApply(BaseTestCase):
 
     def test_kwargs_mapping_dynamic(self):
         class Pow(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** self.kwargs.pow
 
         class Root(self.s.BaseTransform):
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** (1 / self.kwargs.pow)
 
         self.s.trans_seq.set(["pow", "root"])
@@ -198,7 +198,7 @@ class TestApply(BaseTestCase):
                 super().__init__(*args, **kwargs)
                 times += 1
 
-            def _t_num(self, n, _):
+            def _t_num_(self, n, _):
                 return n ** 2
 
         self.s.trans_seq.set(["square"])

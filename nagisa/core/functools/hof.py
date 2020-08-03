@@ -13,23 +13,43 @@ __all__ = [
 ]
 
 
-def make_annotator(f: Callable, spec, slot_name: str, init_fn: Callable, annotate_fn: Callable):
+def make_annotator(
+    f: Callable,
+    spec,
+    slot_name: str,
+    init_fn: Callable,
+    annotate_fn: Callable,
+    *,
+    inplace: bool = False
+) -> Callable:
     from nagisa.core.functools.adapter import adapt_spec
 
     def _decorator(host_f):
         nonlocal f
-        value = getattr(host_f, slot_name, init_fn())
+        value = getattr(host_f, slot_name, None)
+        if value is None:
+            value = init_fn()
+            setattr(host_f, slot_name, value)
         if f is not None:
             f = adapt_spec(spec, f)
-            value = annotate_fn(value, f)
-        setattr(host_f, slot_name, value)
+            if inplace:
+                value = annotate_fn(value, f)
+                setattr(host_f, slot_name, value)
+            else:
+                annotate_fn(value, f)
         return host_f
+
+    _decorator.__init_fn__ = init_fn
 
     return _decorator
 
 
 def make_function(
-    name: str, body: str, *, src_fname: str = 'F', globals: Optional[dict] = None
+    name: str,
+    body: str,
+    *,
+    src_fname: str = 'F',
+    globals: Optional[dict] = None,
 ) -> Callable:
     body = textwrap.dedent(body)
     code = compile(body, "<string>", "exec")
@@ -38,7 +58,7 @@ def make_function(
 
     func_code = None
     for obj in code.co_consts:
-        if (isinstance(obj, types.CodeType) and (obj.co_name == name or obj.co_name == src_fname)):
+        if isinstance(obj, types.CodeType) and (obj.co_name == name or obj.co_name == src_fname):
             func_code = obj
 
     if func_code is None:

@@ -23,7 +23,7 @@ def is_meter_class(C) -> bool:
 class MeterMeta(abc.ABCMeta):
     def __new__(mcls, name, bases, namespace, **kwargs):
         for attr_name, attr in namespace.items():
-            if getattr(attr, "_decorated", False):
+            if getattr(attr, "__decorated__", False):
                 continue
 
             if callable(attr):
@@ -105,7 +105,7 @@ def sync_all_reduce(*attrs) -> Callable:
 
         return another_wrapper
 
-    wrapper._decorated = True
+    wrapper.__decorated__ = True
     return wrapper
 
 
@@ -118,5 +118,5 @@ def reinit__is_reduced(func: Callable) -> Callable:
         func(self, *args, **kwargs)
         self._is_reduced = False
 
-    wrapper._decorated = True
+    wrapper.__decorated__ = True
     return wrapper

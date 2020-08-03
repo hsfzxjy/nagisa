@@ -33,7 +33,7 @@ class TestCheckDep(BaseTestCase):
         def item1(id, res1, res2):
             pass
 
-        self.DataResolver(None, None)._check_dep()
+        self.DataResolver(None, None)._check_dep_()
 
     def test_cyclic_resource(self):
         @self.s.Resource.r
@@ -45,7 +45,7 @@ class TestCheckDep(BaseTestCase):
             pass
 
         with self.assertRaises(RuntimeError):
-            self.DataResolver(None, None)._check_dep()
+            self.DataResolver(None, None)._check_dep_()
 
     def test_cyclic_resource_with(self):
         @self.s.Resource.r
@@ -61,7 +61,7 @@ class TestCheckDep(BaseTestCase):
             pass
 
         with self.assertRaises(RuntimeError):
-            self.DataResolver(None, None)._check_dep()
+            self.DataResolver(None, None)._check_dep_()
 
     def test_cyclic_self(self):
         @self.s.Resource.r
@@ -69,7 +69,7 @@ class TestCheckDep(BaseTestCase):
             pass
 
         with self.assertRaises(RuntimeError):
-            self.DataResolver(None, None)._check_dep()
+            self.DataResolver(None, None)._check_dep_()
 
     def test_bad_dep_name(self):
         @self.s.Resource.r
@@ -77,7 +77,7 @@ class TestCheckDep(BaseTestCase):
             pass
 
         with self.assertRaises(RuntimeError):
-            self.DataResolver(None, None)._check_dep()
+            self.DataResolver(None, None)._check_dep_()
 
     def test_scope(self):
         @self.s.Resource.r
@@ -88,7 +88,7 @@ class TestCheckDep(BaseTestCase):
         def res2(id, res1):
             pass
 
-        self.DataResolver(None, None)._check_dep()
+        self.DataResolver(None, None)._check_dep_()
 
     def test_bad_scope(self):
         @self.s.Resource.r
@@ -100,7 +100,7 @@ class TestCheckDep(BaseTestCase):
             pass
 
         with self.assertRaises(RuntimeError):
-            self.DataResolver(None, None)._check_dep()
+            self.DataResolver(None, None)._check_dep_()
 
     def test_bad_scope_item(self):
         @self.s.Resource.r
@@ -112,7 +112,7 @@ class TestCheckDep(BaseTestCase):
             pass
 
         with self.assertRaises(RuntimeError):
-            self.DataResolver(None, None)._check_dep()
+            self.DataResolver(None, None)._check_dep_()
 
 
 class TestCache(BaseTestCase):

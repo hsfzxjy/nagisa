@@ -11,7 +11,7 @@ __all__ = [
 
 class CollateFn:
     def __init__(self, cfg):
-        self._cfg = cfg
+        self._cfg_ = cfg
 
     cfg = cfg_property
 

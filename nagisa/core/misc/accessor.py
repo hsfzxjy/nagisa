@@ -4,7 +4,6 @@ from nagisa.core.misc.registry import Registry
 
 
 class _Action(enum.Enum):
-
     UPDATE = enum.auto()
     APPEND = enum.auto()
     PREPEND = enum.auto()
@@ -15,37 +14,37 @@ class _Action(enum.Enum):
 _ModifierActionRegistry = Registry("ModifierAction")
 
 
-@_ModifierActionRegistry.register(_Action.UPDATE)
-def __update(directive, obj, name, value, attrsetter):
+@_ModifierActionRegistry.r(_Action.UPDATE)
+def _update(directive, obj, name, value, attrsetter):
     attrsetter(obj, name, value)
 
 
-@_ModifierActionRegistry.register(_Action.APPEND)
-def __append(directive, obj, name, value, attrsetter):
+@_ModifierActionRegistry.r(_Action.APPEND)
+def _append(directive, obj, name, value, attrsetter):
     target: list = getattr(obj, name, None)
     if not isinstance(target, list):
-        raise TypeError("Cannot apply `{!r}` on {!r} type object.".format(directive, type(value)))
+        raise TypeError(f"Cannot apply {directive!r} on {type(value)!r} type object")
 
     target.append(value)
 
 
-@_ModifierActionRegistry.register(_Action.PREPEND)
-def __prepend(directive, obj, name, value, attrsetter):
+@_ModifierActionRegistry.r(_Action.PREPEND)
+def _prepend(directive, obj, name, value, attrsetter):
     target: list = getattr(obj, name, None)
     if not isinstance(target, list):
-        raise TypeError("Cannot apply `{!r}` on {!r} type object.".format(directive, type(value)))
+        raise TypeError(f"Cannot apply {directive!r} on {type(value)!r} type object")
 
     target.insert(0, value)
 
 
-@_ModifierActionRegistry.register(_Action.NOTFOUND)
-def __not_found(directive, obj, name, value, attrsetter):
-    raise RuntimeError("`{}` not found.".format(directive))
+@_ModifierActionRegistry.r(_Action.NOTFOUND)
+def _not_found(directive, obj, name, value, attrsetter):
+    raise RuntimeError(f"{directive!r} not found.")
 
 
-@_ModifierActionRegistry.register(_Action.INVALID)
-def __invalid(directive, obj, name, value, attrsetter):
-    raise RuntimeError("Invalid directive `{}`.".format(directive))
+@_ModifierActionRegistry.r(_Action.INVALID)
+def _invalid(directive, obj, name, value, attrsetter):
+    raise RuntimeError(f"Invalid directive {directive!r}.")
 
 
 def _resolve_path(obj, dotted_path: str, attrchecker):
@@ -82,30 +81,30 @@ def modify(obj, directive: str, value, ext_syntax=True, attrsetter=setattr, attr
     _ModifierActionRegistry[action](directive, obj, name, value, attrsetter)
 
 
-__Null = object()
+_empty = object()
 
 
-def __default_attrgetter(obj, name):
-    result = getattr(obj, name, __Null)
-    if result is __Null and hasattr(obj, "__getitem__"):
+def _default_attrgetter(obj, name):
+    result = getattr(obj, name, _empty)
+    if result is _empty and hasattr(obj, "__getitem__"):
         if name.isdigit():
             try:
                 result = obj[int(name)]
             except KeyError:
-                result = __Null
+                result = _empty
         else:
             try:
                 result = obj[name]
             except KeyError:
-                result = __Null
+                result = _empty
 
-    if result is __Null:
+    if result is _empty:
         raise AttributeError(f"{obj!r} object has no attribute {name!r}")
 
     return result
 
 
-def get(obj, path: str, attrgetter=__default_attrgetter):
+def get(obj, path: str, attrgetter=_default_attrgetter):
     for name in path.split("."):
         obj = attrgetter(obj, name)
 

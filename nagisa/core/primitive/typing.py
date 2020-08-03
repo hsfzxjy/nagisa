@@ -191,13 +191,21 @@ def cast(value, T, *, check=True, raise_exc=True):
         assert is_acceptableT(T)
 
     if value is Malformed:
-        return value
+        return Malformed
 
     if not checkT(value, T, check=False):
-        if raise_exc:
-            raise TypeError(f"Cannot cast {value!r} into {strT(T)}.")
+        if isinstance(value, str):
+            obj = str_to_object(value)
+            ret = cast(obj, T, check=False, raise_exc=False)
+            if ret is Malformed and unnullT(T) is str:
+                ret = value
         else:
-            return Malformed
+            ret = Malformed
+
+        if raise_exc and ret is Malformed:
+            raise TypeError(f"Cannot cast {value!r} into {strT(T)}")
+
+        return ret
 
     if T is AnyType:
         return value

@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 try:
     import yaml
 except ModuleNotFoundError:
-    logger.warn("Library `PyYAML` not found.")
+    logger.warn("Package `PyYAML` not found")
 
 from nagisa.core.misc.io import resolve, resolve_until_exists
 

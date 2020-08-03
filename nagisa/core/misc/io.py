@@ -37,10 +37,7 @@ def nagisa_root_dir() -> pathlib.Path:
     return pathlib.Path(__file__).absolute().parent.parent.parent
 
 
-def _resolve_path_based_on_caller(
-    path: Union[str, pathlib.Path],
-    caller_level: Union[int, float] = NOT_NAGISA
-) -> Optional[pathlib.Path]:
+def _resolve_path_based_on_caller(path, caller_level=NOT_NAGISA) -> Optional[pathlib.Path]:
     tb_list = traceback.extract_stack()
     if math.isfinite(caller_level):
         assert isinstance(caller_level, int) and caller_level < 0
@@ -57,7 +54,7 @@ def _resolve_path_based_on_caller(
     return pathlib.Path(frame.filename).parent / path
 
 
-def _resolve_path_based_on_cwd(path: Union[str, pathlib.Path]) -> pathlib.Path:
+def _resolve_path_based_on_cwd(path) -> pathlib.Path:
     return pathlib.Path.cwd() / path
 
 
@@ -79,10 +76,7 @@ def resolve_until(
     if not path.is_absolute():
         for method in order:
             if method == 'caller':
-                path = _resolve_path_based_on_caller(
-                    path,
-                    caller_level=caller_level - 1,
-                )
+                path = _resolve_path_based_on_caller(path, caller_level=caller_level - 1)
             elif method == 'cwd':
                 path = _resolve_path_based_on_cwd(path)
             else:
@@ -124,15 +118,15 @@ def resolve(
 
 URLOpener = FunctionSelector(f"{__name__}.URLOpener", func_spec=["url | u"], cond_spec=["url | u?"])
 
-_google_drive_regexp = re.compile(
+_google_drive_pattern_ = re.compile(
     r"^https://drive\.google\.com/(file/d/(?P<id>[\w\-_]+)/view|uc\?.*id=(?P<id2>[^&]+)).*$"
 )
 _google_drive_confirm_regexp = re.compile(rb"confirm=([\w\d_\-]+)")
 
 
-@URLOpener.r(lambda url: _google_drive_regexp.match(url) is not None)
+@URLOpener.r(lambda url: _google_drive_pattern_.match(url) is not None)
 def google_drive_opener(url):
-    matched = _google_drive_regexp.match(url)
+    matched = _google_drive_pattern_.match(url)
     id = matched.group("id") or matched.group("id2")
     url = f"https://drive.google.com/uc?id={id}"
 
@@ -142,12 +136,12 @@ def google_drive_opener(url):
     response = opener.open(url)
     content_type = response.getheader("Content-Type")
     if content_type is None:
-        raise RuntimeError("Bad response: cannot read content-type.")
+        raise RuntimeError("Bad response: cannot read content-type")
 
     if "text/html" in content_type:
         confirm_code = _google_drive_confirm_regexp.findall(response.read())
         if not confirm_code:
-            raise RuntimeError("Cannot obtain confirm code.")
+            raise RuntimeError("Cannot obtain confirm code")
         confirm_code = confirm_code[0].decode("UTF-8")
 
         return opener.open(f"{url}&confirm={confirm_code}")
@@ -162,8 +156,6 @@ def default_opener(url):
 
 def download_url_to_file(url, dst, hash_prefix=None, progress=True):
     file_size = None
-    # We use a different API for python2 since urllib(2) doesn't recognize the CA
-    # certificates in older Python
     u = URLOpener.select(url)(url)
     meta = u.info()
     if hasattr(meta, "getheaders"):
@@ -203,9 +195,7 @@ def download_url_to_file(url, dst, hash_prefix=None, progress=True):
         if hash_prefix is not None:
             digest = sha256.hexdigest()
             if digest[:len(hash_prefix)] != hash_prefix:
-                raise RuntimeError(
-                    'invalid hash value (expected "{}", got "{}")'.format(hash_prefix, digest)
-                )
+                raise RuntimeError(f'Invalid hash value (expected {hash_prefix!r}, got {digest!r})')
         shutil.move(f.name, dst)
     finally:
         f.close()

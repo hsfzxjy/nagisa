@@ -21,7 +21,7 @@ class TestInit(unittest.TestCase):
 
         for value, T in cases:
             x = scheme.SchemeNode(type_=T)
-            self.assertEqual(x._value, value)
+            self.assertEqual(x._value_, value)
 
     def test_init_with_default(self):
         cases = [
@@ -40,7 +40,7 @@ class TestInit(unittest.TestCase):
         ]
         for value, T in cases:
             x = scheme.SchemeNode(default=value)
-            self.assertEqual(x._meta.type, T)
+            self.assertEqual(x._meta_.type, T)
 
     def test_init_with_default_and_type(self):
         cases = [
@@ -55,7 +55,7 @@ class TestInit(unittest.TestCase):
         ]
         for value, T in cases:
             x = scheme.SchemeNode(default=value, type_=T)
-            self.assertEqual(x._meta.type, T)
+            self.assertEqual(x._meta_.type, T)
 
         cases = [
             [[1, 2], [int]],
@@ -288,7 +288,7 @@ class TestSetAttr(unittest.TestCase):
             x.foo = 1
         self.assertEqual(
             str(cm.exception),
-            "Expect value to be a dict for container entry 'foo', got <class 'int'>.",
+            "Expect value to be a dict for container entry 'foo', got <class 'int'>",
         )
 
     def test_set_attr_container_dict_fail(self):
@@ -388,7 +388,7 @@ class TestRepr(unittest.TestCase):
         class Config:
             pass
 
-        self.assertEqual(str(Config), "<SchemeNode Constructor>")
+        self.assertEqual(str(Config), "<SchemeNode Builder>")
 
 
 class TestMerge(unittest.TestCase):
@@ -414,7 +414,7 @@ class TestMerge(unittest.TestCase):
             cfg = self.Config().merge_from_dict(dct).finalize()
         self.assertEqual(
             str(cm.exception),
-            "Adding extra entries 'foo_5' to read-only container 'sub' is forbidden.",
+            "Adding extra entries 'foo_5' to read-only container 'sub' is forbidden",
         )
 
     def test_merge_from_dict_typeerror(self):
@@ -424,7 +424,7 @@ class TestMerge(unittest.TestCase):
             cfg = self.Config().merge_from_dict(dct).finalize()
         self.assertEqual(
             str(cm.exception),
-            "Expect value to be a dict for container entry 'sub', got <class 'int'>.",
+            "Expect value to be a dict for container entry 'sub', got <class 'int'>",
         )
 
     def test_merge_from_dict_writable_container(self):

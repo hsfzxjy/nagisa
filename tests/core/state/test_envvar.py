@@ -30,7 +30,7 @@ class Test_object_from_envvar(unittest.TestCase):
         with mock_env("foo", "bar"):
             self.assertEqual("bar", envvar.object_from_envvar("foo", str))
         with mock_env("foo", "'bar'"):
-            self.assertEqual("bar", envvar.object_from_envvar("foo", str))
+            self.assertEqual("'bar'", envvar.object_from_envvar("foo", str))
 
     def test_parse_num(self):
         with mock_env("foo", "1"):
@@ -41,27 +41,29 @@ class Test_object_from_envvar(unittest.TestCase):
         with mock_env("foo", "1" + "0" * 100):
             self.assertEqual(10 ** 100, envvar.object_from_envvar("foo", int))
 
+
+class Test_option(unittest.TestCase):
     def test_modify_from_store(self):
         from nagisa.core.state.scheme import SchemeNode
 
-        envvar._registry._store = None
+        envvar._registry.unsync()
         scheme_node = SchemeNode(is_container=True, attributes=["w"]).finalize()
         envvar._registry.sync_with(scheme_node)
 
         with mock_env("FOO1", "['bar']"):
             scheme_node.FOO2 = "(True,)"
             scheme_node.FOO3 = [42.]
-            self.assertEqual(envvar.object_from_envvar("FOO1", [str]), ['bar'])
-            self.assertEqual(envvar.object_from_envvar("FOO2", [bool]), [True])
-            self.assertRaises(ValueError, envvar.object_from_envvar, "FOO3", [bool])
-            self.assertEqual(envvar.object_from_envvar("FOO2", (str, None)), "(True,)")
+            self.assertEqual(envvar.option("FOO1", T=[str]), ['bar'])
+            self.assertEqual(envvar.option("FOO2", T=[bool]), [True])
+            self.assertRaises(TypeError, envvar.option, "FOO3", T=[bool])
+            self.assertEqual(envvar.option("FOO2", T=(str, None)), "(True,)")
 
 
 class Test_option_scan(unittest.TestCase):
     def setUp(self):
         from nagisa.core.state.scheme import SchemeNode
 
-        envvar._registry._store = None
+        envvar._registry.unsync()
         self.scheme_node = SchemeNode(is_container=True, attributes=["w"])
         envvar._registry.sync_with(self.scheme_node)
 

@@ -4,23 +4,26 @@ from nagisa.core.functools import adapt_spec, make_annotator
 
 class Registry:
     def __init__(self, name, unique=True):
-        self._mapping = {}
-        self.__name = name
-        self.__unique = unique
+        self._mapping_ = {}
+        self._name_ = name
+        self._unique_ = unique
 
-    def _check_value(self, key, value):
+    def __getitem__(self, key):
+        return self._mapping_[key]
+
+    def _check_value_(self, key, value):
         return value
 
-    def _register(self, key, value):
-        if key in self._mapping and self.__unique:
-            raise KeyError(f"Key {key!r} already registered in <Registry: {self.__name}>")
-        value = self._check_value(key, value)
-        self._mapping[key] = value
+    def _register_(self, key, value):
+        if key in self._mapping_ and self._unique_:
+            raise KeyError(f"Key {key!r} already registered in <Registry: {self._name_}>")
+        value = self._check_value_(key, value)
+        self._mapping_[key] = value
         return value
 
     def register(self, key, value=None):
         def _decorator(value):
-            return self._register(key, value)
+            return self._register_(key, value)
 
         if value is None:
             if hasattr(key, "__name__"):
@@ -34,30 +37,27 @@ class Registry:
     r = register
 
     def keys(self):
-        return self._mapping.keys()
-
-    def __getitem__(self, key):
-        return self._mapping[key]
+        return self._mapping_.keys()
 
     def get(self, key, default=None):
-        return self._mapping.get(key, default)
+        return self._mapping_.get(key, default)
 
 
 class Selector(object):
     def __init__(self, name, cond_spec=[...]):
-        self._mapping = []
-        self.__name = name
-        self._cond_spec = cond_spec
+        self._mapping_ = []
+        self._name_ = name
+        self._cond_spec_ = cond_spec
 
-    def _register(self, cond, value):
-        key = adapt_spec(self._cond_spec, cond)
-        value = self._check_value(key, value)
-        self._mapping.append((key, value))
+    def _register_(self, cond, value):
+        key = adapt_spec(self._cond_spec_, cond)
+        value = self._check_value_(key, value)
+        self._mapping_.append((key, value))
         return value
 
     def register(self, key, value=None):
         def _decorator(value):
-            return self._register(key, value)
+            return self._register_(key, value)
 
         if value is None:
             return _decorator
@@ -67,37 +67,37 @@ class Selector(object):
     r = register
 
     def select(self, *args):
-        for cond, value in self._mapping:
+        for cond, value in self._mapping_:
             if cond(*args):
                 return value
 
         return None
 
 
-class FunctionValueMixin(object):
+class FuncValueMixin(object):
 
-    _function_spec = [...]
+    _func_spec_ = [...]
 
-    def _check_value(self, key, f):
-        spec = self._function_spec
+    def _check_value_(self, key, f):
+        spec = self._func_spec_
         if getattr(f, "__is_adapter__", False):
             return f
 
-        return adapt_spec(self._function_spec, f, preserve_meta=True)
+        return adapt_spec(self._func_spec_, f, preserve_meta=True)
 
 
-class FunctionRegistry(FunctionValueMixin, Registry):
+class FunctionRegistry(FuncValueMixin, Registry):
     pass
 
 
 class MultiEntryRegistry(Registry):
     def __init__(self, name):
         super().__init__(name)
-        self._mapping = collections.defaultdict(list)
+        self._mapping_ = collections.defaultdict(list)
 
-    def _register(self, key, value):
-        value = self._check_value(key, value)
-        self._mapping[key].append(value)
+    def _register_(self, key, value):
+        value = self._check_value_(key, value)
+        self._mapping_[key].append(value)
         return value
 
 
@@ -112,25 +112,25 @@ def _when_annotator_fn(lst, f):
 
 class MultiEntryConditionalFunctionRegistry(MultiEntryFunctionRegistry):
 
-    _when_spec = [...]
+    _when_spec_ = [...]
 
     @classmethod
     def when(cls, f):
-        return make_annotator(f, cls._when_spec, "__when__", list, _when_annotator_fn)
+        return make_annotator(f, cls._when_spec_, "__when__", list, _when_annotator_fn)
 
-    def _check_value(self, key, f):
-        new_f = super()._check_value(key, f)
+    def _check_value_(self, key, f):
+        new_f = super()._check_value_(key, f)
         self.when(None)(new_f)
 
         return new_f
 
     def select(self, key, *args):
-        for f in self._mapping[key]:
+        for f in self._mapping_[key]:
             if not f.__when__ or any(cond(*args) for cond in f.__when__):
                 return f
 
 
-class FunctionSelector(FunctionValueMixin, Selector):
+class FunctionSelector(FuncValueMixin, Selector):
     def __init__(self, name, func_spec=[...], cond_spec=[...]):
         super().__init__(name, cond_spec)
-        self._func_spec = func_spec
+        self._func_spec_ = func_spec
