@@ -7,13 +7,10 @@ from nagisa.torch.misc.test import TorchTestCase
 
 class BaseDatasetTestCase(TorchTestCase):
     def setUp(self):
-        for n in list(filter(
-                lambda x: x.startswith("nagisa.torch.data"),
-                sys.modules,
-        )):
+        for n in list(filter(lambda x: x.startswith("nagisa.torch"), sys.modules)):
             del sys.modules[n]
 
-        from nagisa.torch.data import shortcuts as s
+        from nagisa.torch import data as s
         from nagisa.torch.data.dataloader import DataLoader
 
         self.s = s

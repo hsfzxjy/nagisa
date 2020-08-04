@@ -6,16 +6,13 @@ class BaseTestCase(unittest.TestCase):
     def setUp(self):
         import sys
 
-        for n in list(filter(
-                lambda x: x.startswith("nagisa.torch.data"),
-                sys.modules,
-        )):
+        for n in list(filter(lambda x: x.startswith("nagisa.torch"), sys.modules)):
             del sys.modules[n]
 
-        from nagisa.torch.data import shortcuts
+        from nagisa.torch import data
         from nagisa.torch.data._data_resolver import DataResolver
 
-        self.s = shortcuts
+        self.s = data
         self.DataResolver = DataResolver
 
 
