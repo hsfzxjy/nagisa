@@ -34,7 +34,7 @@ class TestTransformClass(BaseTestCase):
 
     def test_kwargs(self):
         class Pow(self.s.BaseTransform):
-            class _kwargs_template:
+            class _kwargs_scheme_:
                 pow: int = 2
 
             def _t_num_(self, n, *_):
@@ -45,7 +45,7 @@ class TestTransformClass(BaseTestCase):
 
     def test_check_kwargs(self):
         class Pow(self.s.BaseTransform):
-            class _kwargs_template:
+            class _kwargs_scheme_:
                 pow: int = 2
 
             def _check_kwargs_(self, kwargs):

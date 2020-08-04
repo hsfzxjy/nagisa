@@ -26,7 +26,7 @@ trans_kwargs = ConfigValue(
 
 class BaseTransform(object):
     @SchemeNode.writable
-    class _kwargs_template:
+    class _kwargs_scheme_:
         pass
 
     def __init_subclass__(cls, key=None):
@@ -38,7 +38,7 @@ class BaseTransform(object):
     def __init__(self, *, cfg=None, meta=None, **kwargs):
         self._cfg_ = cfg
         self.meta = meta
-        kwargs = SchemeNode.from_class(self._kwargs_template, )().merge_from_dict(kwargs)
+        kwargs = SchemeNode.from_class(self._kwargs_scheme_, )().merge_from_dict(kwargs)
         self._check_kwargs_(kwargs)
         self.kwargs = kwargs.finalize()
 
