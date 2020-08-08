@@ -96,19 +96,18 @@ def init_process(rank, size, backend, Q, done_events, exit_event, main):
     exit_event.wait()
 
 
-def mp_call(main, *, size=4, backend='gloo', start_method='spawn'):
-    mp_ctx = torch_mp.get_context(start_method)
+def mp_call(main, *, size=4, backend='gloo'):
+    mp_ctx = torch_mp.get_context('spawn')
     Q = mp_ctx.SimpleQueue()
 
     done_events = [mp_ctx.Event() for _ in range(size)]
     exit_event = mp_ctx.Event()
 
-    processes = torch_mp.start_processes(
+    processes = torch_mp.spawn(
         init_process,
         args=(size, backend, Q, done_events, exit_event, main),
         nprocs=size,
-        join=False,
-        start_method=start_method
+        join=False
     )
 
     for event in done_events:
