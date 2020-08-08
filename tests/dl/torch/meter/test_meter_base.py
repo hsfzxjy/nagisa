@@ -6,10 +6,10 @@ class TestBase(unittest.TestCase):
         import sys
 
         for name in list(sys.modules):
-            if name.startswith("nagisa.torch.meter"):
+            if name.startswith("nagisa.dl.torch.meter"):
                 del sys.modules[name]
 
-        from nagisa.torch.meter import meter_base
+        from nagisa.dl.torch.meter import meter_base
 
         self.meters = meter_base
 

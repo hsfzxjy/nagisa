@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 
-from nagisa.torch.misc import casting
+from nagisa.dl.torch.misc import casting
 from .meter_base import MeterBase, reinit__is_reduced, sync_all_reduce
 
 

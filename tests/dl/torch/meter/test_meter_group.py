@@ -2,7 +2,7 @@ import unittest
 
 import torch
 
-from nagisa.torch.misc.test import TorchTestCase
+from nagisa.dl.torch.misc.test import TorchTestCase
 
 t = torch.tensor
 
@@ -12,10 +12,10 @@ class TestBase(TorchTestCase):
         import sys
 
         for name in list(sys.modules):
-            if name.startswith("nagisa.torch.meter"):
+            if name.startswith("nagisa.dl.torch.meter"):
                 del sys.modules[name]
 
-        from nagisa.torch.meter import (
+        from nagisa.dl.torch.meter import (
             meter_base as mb,
             meter_group as mg,
             meter_builtins as mbi,

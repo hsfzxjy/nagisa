@@ -1,6 +1,6 @@
 import unittest
 
-from nagisa.torch.data._registries import ResourceItemRegistry
+from nagisa.dl.torch.data._registries import ResourceItemRegistry
 from nagisa.core.misc.cache import Scope
 
 

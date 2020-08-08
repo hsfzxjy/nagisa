@@ -25,7 +25,7 @@ class _Wrapper(abc.ABC):
             other = other._array_
         return self._equal_(self._array_, other)
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def _equal_(self, first, second):
         pass
 

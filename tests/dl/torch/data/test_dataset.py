@@ -4,10 +4,10 @@ import unittest
 
 class BaseDatasetTestCase(unittest.TestCase):
     def setUp(self):
-        for n in list(filter(lambda x: x.startswith("nagisa.torch"), sys.modules)):
+        for n in list(filter(lambda x: x.startswith("nagisa.dl.torch"), sys.modules)):
             del sys.modules[n]
 
-        from nagisa.torch import data
+        from nagisa.dl.torch import data
 
         self.s = data
 

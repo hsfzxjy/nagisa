@@ -17,7 +17,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 
-from nagisa.torch.misc.casting import to_tensor
+from nagisa.dl.torch.misc.casting import to_tensor
 
 _LOCAL_PROCESS_GROUP = None
 """

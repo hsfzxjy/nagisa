@@ -2,7 +2,7 @@ import abc
 import functools
 from typing import Callable, Any
 
-from nagisa.torch.misc import comm
+from nagisa.dl.torch.misc import comm
 from nagisa.core.misc.naming import camel_to_snake
 from ._registries import MeterRegistry
 
@@ -88,7 +88,7 @@ def sync_all_reduce(*attrs) -> Callable:
             if not isinstance(self, MeterBase):
                 raise RuntimeError(
                     "Decorator sync_all_reduce should be used on "
-                    "nagisa.torch.meter.meter_base.MeterBase class methods only"
+                    "nagisa.dl.torch.meter.meter_base.MeterBase class methods only"
                 )
 
             if len(attrs) > 0 and not self._is_reduced:

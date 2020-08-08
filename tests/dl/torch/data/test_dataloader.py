@@ -1,15 +1,15 @@
 import sys
 import torch
 
-from nagisa.torch.misc.test import TorchTestCase
+from nagisa.dl.torch.misc.test import TorchTestCase
 
 
 class BaseDatasetTestCase(TorchTestCase):
     def setUp(self):
-        for n in list(filter(lambda x: x.startswith("nagisa.torch"), sys.modules)):
+        for n in list(filter(lambda x: x.startswith("nagisa.dl.torch"), sys.modules)):
             del sys.modules[n]
 
-        from nagisa.torch import data as s
+        from nagisa.dl.torch import data as s
 
         self.s = s
 
