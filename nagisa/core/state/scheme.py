@@ -57,23 +57,71 @@ class SchemeNode:
 
         return result
 
-    def __init__(self, parent=None, default=None, type_=None, attributes=None, is_container=False):
-        if not is_container:
-            assert default is not None or type_ is not None, \
-                "At least one of `type_` or `default` should be provided"
+    def __reduce__(self):
+        meta_dict = {}
+        alias_dict = {}
 
-            if default is None:
-                final_type = type_
-            elif type_ is None:
-                final_type = typing.inferT(default)
+        def _visitor(path, node):
+            meta_dict[path] = node._meta_
+            if node._meta_.is_container:
+                alias_dict[path] = node._alias_entries_
+
+        self._walk_((), _visitor, visit_container=True)
+        return (self._reconstruct_, (self.value_dict(), meta_dict, alias_dict, self._finalized_))
+
+    @classmethod
+    def _reconstruct_(cls, value_dict, meta_dict, alias_dict, finalized):
+        def _build(value, path, parent):
+            meta = meta_dict[path]
+            if isinstance(value, dict):
+                result = cls(is_container=True, parent=parent, meta=meta)
+                for k, v in value.items():
+                    result.entry(k, _build(v, path + (k, ), result))
             else:
-                assert typing.checkT(default, type_), \
-                    f"Value {default!r} is incompatible with type {type_!r}"
-                final_type = type_
+                result = cls(default=value, meta=meta)
 
-            typing.is_acceptableT(final_type, raise_exc=True)
-            if default is None:
-                default = typing.get_default_value(final_type)
+            return result
+
+        result = _build(value_dict, (), None)
+        if finalized:
+            result.finalize()
+
+        return result
+
+    @staticmethod
+    def _infer_(type_, value):
+        assert value is not None or type_ is not None, \
+            "At least one of `type_` or `default` should be provided"
+
+        if value is None:
+            final_type = type_
+        elif type_ is None:
+            final_type = typing.inferT(value)
+        else:
+            assert typing.checkT(value, type_), \
+                f"Value {value!r} is incompatible with type {type_!r}"
+            final_type = type_
+
+        typing.is_acceptableT(final_type, raise_exc=True)
+        if value is None:
+            value = typing.get_default_value(final_type)
+
+        return final_type, value
+
+    def __init__(
+        self,
+        parent=None,
+        default=None,
+        type_=None,
+        attributes=None,
+        is_container=False,
+        meta=None,
+    ):
+        if not is_container:
+            if meta is None:
+                final_type, default = self._infer_(type_, default)
+            else:
+                final_type = meta.type
             self._value_ = proxy(
                 typing.cast(default, final_type, check=False),
                 T=final_type,
@@ -85,8 +133,13 @@ class SchemeNode:
             self._entries_ = dict()
             final_type = None
 
-        attributes = self.__class__.__parse_attributes__(attributes)
-        self._meta_ = NodeMeta(type_=final_type, attributes=attributes, is_container=is_container)
+        if meta is None:
+            attributes = self.__class__.__parse_attributes__(attributes)
+            self._meta_ = NodeMeta(
+                type_=final_type, attributes=attributes, is_container=is_container
+            )
+        else:
+            self._meta_ = meta
         self._parent_ = weakref.ref(parent) if parent is not None else None
 
         self._finalized_ = False
@@ -188,13 +241,16 @@ class SchemeNode:
         cls._parse_attributes_(ns, attributes)
         return ns
 
-    def _walk_(self, path, func):
+    def _walk_(self, path, func, *, visit_container=False):
         if not self._meta_.is_container:
             func(path, self)
             return
 
+        if visit_container:
+            func(path, self)
+
         for key, entry in self._entries_.items():
-            entry._walk_(path + [key], func)
+            entry._walk_(path + (key, ), func, visit_container=visit_container)
 
     @classmethod
     def _parse_attributes_(cls, ns, attributes):

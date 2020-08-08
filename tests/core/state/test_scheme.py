@@ -1,6 +1,7 @@
 import os
 import unittest
 from nagisa.core.state import scheme
+from nagisa.core.misc.testing import ReloadModuleTestCase
 
 
 class TestInit(unittest.TestCase):
@@ -570,3 +571,33 @@ class TestSingleton(unittest.TestCase):
 
         a = ConfigA()
         b = ConfigB()
+
+
+class TestDistributed(ReloadModuleTestCase):
+    drop_modules = [
+        '^nagisa',
+    ]
+    attach = [
+        ['mp_call', 'nagisa.dl.torch.misc.testing:mp_call'],
+        ['SchemeNode', 'nagisa.core.state.scheme:SchemeNode'],
+    ]
+
+    @staticmethod
+    def main_test_picklable(cfg, Q, *_):
+        cfg.c = ['bar']
+        Q.put((cfg.value_dict(), cfg.type_dict(), cfg._finalized_))
+
+    def test_pickable(self):
+        @self.SchemeNode.from_class
+        class Config:
+            a = 'foo'
+            b: [int]
+            c: [[str], 'w']
+
+            class d:
+                e = False
+
+        cfg = Config().finalize()
+        result = self.mp_call(self.main_test_picklable, args=(cfg, ))
+        cfg.c = ['bar']
+        self.assertEqual(result, [(cfg.value_dict(), cfg.type_dict(), True)] * 4)

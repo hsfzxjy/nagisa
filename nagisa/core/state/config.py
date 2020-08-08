@@ -31,7 +31,7 @@ class ConfigNode(SchemeNode):
                 return
             directives.append((".".join(path), getattr(ns, arg_name)))
 
-        self._walk_([], _visitor)
+        self._walk_((), _visitor)
         self._merge_from_directives_(directives, ext_syntax=False)
 
         return self
@@ -47,7 +47,7 @@ class ConfigNode(SchemeNode):
             value = envvar.object_from_envvar(entry._meta_.attributes.env, entry._meta_.type)
             directives.append((directive, value))
 
-        self._walk_([], _visitor)
+        self._walk_((), _visitor)
         self._merge_from_directives_(directives, ext_syntax=False)
 
         return self

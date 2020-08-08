@@ -87,16 +87,16 @@ class TorchTestCase(unittest.TestCase):
         locals()[name] = _build_method(name)
 
 
-def init_process(rank, size, backend, Q, done_events, exit_event, main):
+def init_process(rank, size, backend, Q, done_events, exit_event, main, args):
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '29500'
     torch_dist.init_process_group(backend, rank=rank, world_size=size)
-    main(Q, rank, size)
+    main(*args, Q, rank, size)
     done_events[rank].set()
     exit_event.wait()
 
 
-def mp_call(main, *, size=4, backend='gloo'):
+def mp_call(main, *, size=4, backend='gloo', args=()):
     mp_ctx = torch_mp.get_context('spawn')
     Q = mp_ctx.SimpleQueue()
 
@@ -105,7 +105,7 @@ def mp_call(main, *, size=4, backend='gloo'):
 
     processes = torch_mp.spawn(
         init_process,
-        args=(size, backend, Q, done_events, exit_event, main),
+        args=(size, backend, Q, done_events, exit_event, main, args),
         nprocs=size,
         join=False
     )

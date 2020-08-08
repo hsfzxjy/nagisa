@@ -5,7 +5,7 @@ import torch
 import numpy as np
 import torch.distributed as dist
 
-from nagisa.dl.torch.misc.test import TorchTestCase
+from nagisa.dl.torch.misc.testing import TorchTestCase
 from nagisa.dl.torch.meter.meter_builtins import Accumulation, Avg
 
 t = torch.tensor
@@ -16,7 +16,7 @@ class TestAccumulation(TorchTestCase):
     def setUp(self):
         self.accum = Accumulation()
 
-        from nagisa.dl.torch.misc.test import mp_call
+        from nagisa.dl.torch.misc.testing import mp_call
         self.mp_call = mp_call
 
     def test_scalar(self):
@@ -107,7 +107,7 @@ class TestAvg(TorchTestCase):
     def setUp(self):
         self.avg = Avg()
 
-        from nagisa.dl.torch.misc.test import mp_call
+        from nagisa.dl.torch.misc.testing import mp_call
         self.mp_call = mp_call
 
     def test_basic(self):
