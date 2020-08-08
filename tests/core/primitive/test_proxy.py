@@ -79,7 +79,7 @@ class TestImmutableList(unittest.TestCase):
                 exec(stmt)
 
     def test_valid(self):
-        import sys, pickle
+        import sys
         lst = proxy([1, 2, 3], T=[int])
         cases = [
             ['lst + [4]', [1, 2, 3, 4]],
@@ -151,7 +151,7 @@ class TestMutableList(unittest.TestCase):
                 exec(stmt)
 
     def test_valid(self):
-        import sys, pickle
+        import sys
         lst = proxy([1, 2, 3], T=[int], mutable=True)
         cases = [
             ['lst + [4]', [1, 2, 3, 4]],

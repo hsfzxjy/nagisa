@@ -43,11 +43,15 @@ class Registry:
         return self._mapping_.get(key, default)
 
 
-class Selector(object):
+class Selector:
+    # pylint: disable=dangerous-default-value
     def __init__(self, name, cond_spec=[...]):
         self._mapping_ = []
         self._name_ = name
         self._cond_spec_ = cond_spec
+
+    def _check_value_(self, key, value):
+        return value
 
     def _register_(self, cond, value):
         key = adapt_spec(self._cond_spec_, cond)
@@ -74,12 +78,11 @@ class Selector(object):
         return None
 
 
-class FuncValueMixin(object):
+class FuncValueMixin:
 
     _func_spec_ = [...]
 
     def _check_value_(self, key, f):
-        spec = self._func_spec_
         if getattr(f, "__is_adapter__", False):
             return f
 
@@ -128,9 +131,11 @@ class MultiEntryConditionalFunctionRegistry(MultiEntryFunctionRegistry):
         for f in self._mapping_[key]:
             if not f.__when__ or any(cond(*args) for cond in f.__when__):
                 return f
+        return None
 
 
 class FunctionSelector(FuncValueMixin, Selector):
+    # pylint: disable=dangerous-default-value
     def __init__(self, name, func_spec=[...], cond_spec=[...]):
         super().__init__(name, cond_spec)
         self._func_spec_ = func_spec

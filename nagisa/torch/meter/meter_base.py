@@ -1,18 +1,16 @@
 import abc
 import functools
 from typing import Callable, Any
-from collections.abc import Iterable
 
 from nagisa.torch.misc import comm
-from nagisa.torch.misc import numeric_typing as nt
 from nagisa.core.misc.naming import camel_to_snake
 from ._registries import MeterRegistry
 
 
 def build_meter(meter_cls, init_args):
     meter_cls = MeterRegistry.get(meter_cls, meter_cls)
-    if not is_meter_class(meter_cls) and not callable(meter_cls):
-        raise RuntimeError  # TODO
+    if not callable(meter_cls) and not is_meter_class(meter_cls):
+        raise RuntimeError(f"Bad meter class {meter_cls!r}")
     return meter_cls(*init_args)
 
 
@@ -55,7 +53,6 @@ class MeterBase(metaclass=MeterMeta):
         pass
 
     def __init_subclass__(cls, key=None):
-
         if key is None:
             keys = [camel_to_snake(cls.__name__), cls.__name__]
         elif isinstance(key, str):
@@ -64,8 +61,8 @@ class MeterBase(metaclass=MeterMeta):
             assert isinstance(key, (list, tuple))
             keys = key
 
-        for key in keys:
-            MeterRegistry.register(key, cls)
+        for meter_key in keys:
+            MeterRegistry.register(meter_key, cls)
 
     @classmethod
     def __subclasshook__(cls, C):
@@ -90,7 +87,8 @@ def sync_all_reduce(*attrs) -> Callable:
         def another_wrapper(self: MeterBase, *args, **kwargs) -> Callable:
             if not isinstance(self, MeterBase):
                 raise RuntimeError(
-                    "Decorator sync_all_reduce should be used on ignite.metric.Metric class methods only"
+                    "Decorator sync_all_reduce should be used on "
+                    "nagisa.torch.meter.meter_base.MeterBase class methods only"
                 )
 
             if len(attrs) > 0 and not self._is_reduced:

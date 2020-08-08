@@ -6,10 +6,14 @@ This file contains primitives for multi-gpu communication.
 This is useful when doing distributed training.
 """
 
+# pylint: disable=not-callable
+
 import functools
 import logging
-import numpy as np
 import pickle
+
+import numpy as np
+
 import torch
 import torch.distributed as dist
 
@@ -255,5 +259,5 @@ def reduce_dict(input_dict, average=True):
             # only main process gets accumulated, so only divide by
             # world_size in this case
             values /= world_size
-        reduced_dict = {k: v for k, v in zip(names, values)}
+        reduced_dict = dict(zip(names, values))
     return reduced_dict

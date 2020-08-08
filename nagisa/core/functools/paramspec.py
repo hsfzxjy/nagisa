@@ -1,13 +1,7 @@
 import re
-import types
 import inspect
-import textwrap
-import functools
-import itertools
 from collections import namedtuple
-from typing import Union, List, Tuple, Dict, Callable, Optional, Any, Set
-
-from nagisa.core.misc.naming import isidentifier, isaccessor
+from typing import Union, List, Callable, Optional
 
 __all__ = [
     "match_spec",
@@ -15,13 +9,13 @@ __all__ = [
 
 
 def _check_static_and_get_params(f: Callable) -> List[str]:
-    params = inspect.signature(f).parameters
+    sig = inspect.signature(f)
     if not all(p.kind in (
             inspect.Parameter.POSITIONAL_ONLY,
             inspect.Parameter.POSITIONAL_OR_KEYWORD,
-    ) for p in params.values()):
-        raise TypeError  # TODO detailed info
-    return list(params)
+    ) for p in sig.parameters.values()):
+        raise TypeError(f"Expect all arguments of {f} to be positional, got {sig}")
+    return list(sig.parameters)
 
 
 _ParsedParamSpec = namedtuple("_ParsedParamSpec", ("name", "aliases", "optional", "placeholder"))
@@ -52,50 +46,58 @@ def _parse_param_spec(spec_item: str) -> Optional[_ParsedParamSpec]:
     )
 
 
-def _placeholder_list():
+def _available_name_generator(used_names):
     counter = 0
+    used_names = set(used_names).copy()
     while True:
-        yield f"_{counter}"
+        name = f"_{counter}"
+        if name not in used_names:
+            used_names.add(name)
+            yield name
         counter += 1
 
 
-def match_spec(spec: ParamsSpecType, f: Callable) -> Matched:
-    params = _check_static_and_get_params(f)
+class _ParamSpecMatcher:
+    def __init__(self, spec: ParamsSpecType, f: Callable):
+        self.parsed_specs = []
+        self.has_remaining = False
+        self.spec = spec
+        self.params = _check_static_and_get_params(f)
+        self._parse_specs_(spec)
 
-    parsed_specs = []
-    has_remaining = False
-    for i, x in enumerate(spec):
-        if x is ...:
-            assert i == len(spec) - 1
-            has_remaining = True
-            continue
+        self._name_generator_ = _available_name_generator(
+            set(x.name for x in self.parsed_specs) | set(self.params)
+        )
 
-        assert isinstance(x, str)
-        parsed_spec_item = _parse_param_spec(x)
-        assert parsed_spec_item is not None, f"Bad param spec: {x!r}"
-        parsed_specs.append(parsed_spec_item)
+    def _parse_specs_(self, spec):
+        for i, x in enumerate(spec):
+            if x is ...:
+                assert i == len(spec) - 1
+                self.has_remaining = True
+                continue
 
-    adapter_signature = []
-    adapter_args = []
-    param_ptr = spec_ptr = 0
-    L_spec = len(parsed_specs)
-    L_param = len(params)
-    placeholder_generator = _placeholder_list()
-    placeholder_name = next(placeholder_generator)
-    used_names = set(x.name for x in parsed_specs) | set(params)
-    fail_flag = False
-    while spec_ptr < L_spec and param_ptr < L_param and not fail_flag:
-        param = params[param_ptr]
-        spec_item = parsed_specs[spec_ptr]
+            assert isinstance(x, str)
+            parsed_spec_item = _parse_param_spec(x)
+            assert parsed_spec_item is not None, f"Bad param spec: {x!r}"
+            self.parsed_specs.append(parsed_spec_item)
 
-        if spec_item.placeholder:
-            while placeholder_name in used_names:
-                placeholder_name = next(placeholder_generator)
+    def _next_available_name_(self):
+        return next(self._name_generator_)
 
-            used_names.add(placeholder_name)
-            matched_name = placeholder_name
-        else:
-            if param in spec_item.aliases:
+    def match(self):
+        adapter_signature = []
+        adapter_args = []
+        param_ptr = spec_ptr = 0
+        L_spec = len(self.parsed_specs)
+        L_param = len(self.params)
+        fail_flag = False
+        while spec_ptr < L_spec and param_ptr < L_param and not fail_flag:
+            param = self.params[param_ptr]
+            spec_item = self.parsed_specs[spec_ptr]
+
+            if spec_item.placeholder:
+                matched_name = self._next_available_name_()
+            elif param in spec_item.aliases:
                 matched_name = spec_item.name
             elif spec_item.optional:
                 spec_ptr += 1
@@ -105,31 +107,33 @@ def match_spec(spec: ParamsSpecType, f: Callable) -> Matched:
                 fail_flag = True
                 continue
 
-        adapter_signature.append(matched_name)
-        adapter_args.append(matched_name)
-        param_ptr += 1
-        spec_ptr += 1
+            adapter_signature.append(matched_name)
+            adapter_args.append(matched_name)
+            param_ptr += 1
+            spec_ptr += 1
 
-    while spec_ptr < L_spec and parsed_specs[spec_ptr].optional:
-        adapter_signature.append(parsed_specs[spec_ptr].name)
-        spec_ptr += 1
+        while spec_ptr < L_spec and self.parsed_specs[spec_ptr].optional:
+            adapter_signature.append(self.parsed_specs[spec_ptr].name)
+            spec_ptr += 1
 
-    remaining = params[param_ptr:]
-    for name in remaining:
-        while placeholder_name in used_names:
-            placeholder_name = next(placeholder_generator)
-        used_names.add(placeholder_name)
+        remaining = self.params[param_ptr:]
+        for _ in remaining:
+            placeholder_name = self._next_available_name_()
 
-        adapter_signature.append(placeholder_name)
-        adapter_args.append(placeholder_name)
+            adapter_signature.append(placeholder_name)
+            adapter_args.append(placeholder_name)
 
-    if len(set(adapter_signature)) != len(adapter_signature):
-        fail_flag = True
+        if len(set(adapter_signature)) != len(adapter_signature):
+            fail_flag = True
 
-    fail_flag = fail_flag or spec_ptr != L_spec
-    fail_flag = fail_flag or (not has_remaining and param_ptr != L_param)
+        fail_flag = fail_flag or spec_ptr != L_spec
+        fail_flag = fail_flag or (not self.has_remaining and param_ptr != L_param)
 
-    if fail_flag:
-        raise RuntimeError(f"Param list {params!r} can not match spec {spec!r}")
+        if fail_flag:
+            raise RuntimeError(f"Param list {self.params!r} can not match spec {self.spec!r}")
 
-    return Matched(remaining, adapter_signature, adapter_args)
+        return Matched(remaining, adapter_signature, adapter_args)
+
+
+def match_spec(spec: ParamsSpecType, f: Callable) -> Matched:
+    return _ParamSpecMatcher(spec, f).match()

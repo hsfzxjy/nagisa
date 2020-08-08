@@ -32,7 +32,7 @@ class TestDownloadUrlToFile(TorchTestCase):
         )
 
         data = torch.load(self.dest)
-        self.assertTensorEqual(data["tensor"], torch.tensor(range(100), dtype=float))
+        self.assertEqual(data["tensor"], torch.tensor(range(100), dtype=float))
         self.assertEqual(data["string"], "hello world")
 
     @skip_if_local
@@ -69,7 +69,7 @@ class TestLoadStateDict(TorchTestCase):
             return_filename=True,
         )
 
-        self.assertTensorEqual(data["tensor"], torch.tensor(range(100), dtype=float))
+        self.assertEqual(data["tensor"], torch.tensor(range(100), dtype=float))
         self.assertEqual(data["string"], "hello world")
 
     @skip_if_local_and_no_proxy
@@ -79,7 +79,7 @@ class TestLoadStateDict(TorchTestCase):
             return_filename=True,
         )
 
-        self.assertTensorEqual(data["tensor"], torch.tensor(range(100), dtype=float))
+        self.assertEqual(data["tensor"], torch.tensor(range(100), dtype=float))
         self.assertEqual(data["string"], "hello world")
 
     @skip_if_local_and_no_proxy
@@ -91,7 +91,7 @@ class TestLoadStateDict(TorchTestCase):
             return_filename=True,
         )
 
-        self.assertTensorEqual(data["tensor"], torch.tensor(range(100), dtype=float))
+        self.assertEqual(data["tensor"], torch.tensor(range(100), dtype=float))
         self.assertEqual(data["string"], "hello world")
 
     @skip_if_local

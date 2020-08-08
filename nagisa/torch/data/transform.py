@@ -24,7 +24,7 @@ trans_kwargs = ConfigValue(
 )
 
 
-class BaseTransform(object):
+class BaseTransform:
     @SchemeNode.writable
     class _kwargs_scheme_:
         pass

@@ -1,9 +1,7 @@
 import sys
-import types
 import weakref
 
 from nagisa.core.functools import wraps
-from nagisa.core.misc import naming
 from . import typing
 
 __all__ = ['proxy']
@@ -41,6 +39,21 @@ class ProxyBase(metaclass=ProxyMeta):
     ...
 
 
+def _make_method(method):
+    def _method(self, *args, **kwargs):
+        return method(self.__lstobj__, *args, **kwargs)
+
+    return _method
+
+
+def _make_mutablility_check_method(method):
+    def _method(self, *args, **kwargs):
+        self._ensure_mutable_()
+        return method(self.__lstobj__, *args, **kwargs)
+
+    return _method
+
+
 class SwitchableList(ProxyBase):
     def __init__(self, lstobj: list, T, *, host=None, mutable=False):
         self.__lstobj__ = lstobj
@@ -70,6 +83,7 @@ class SwitchableList(ProxyBase):
         if not self.__mutable__:
             raise RuntimeError('Cannot perform this action on immutable list')
 
+    # pylint: disable=redefined-builtin
     @wraps(list.append)
     def append(self, object):
         self._ensure_mutable_()
@@ -86,6 +100,7 @@ class SwitchableList(ProxyBase):
 
         self.__lstobj__.extend(iterable)
 
+    # pylint: disable=redefined-builtin
     @wraps(list.insert)
     def insert(self, index, object):
         self._ensure_mutable_()
@@ -93,19 +108,6 @@ class SwitchableList(ProxyBase):
             raise TypeError(f'Cannot insert {object!r} into {self.__T_str__} type list')
 
         self.__lstobj__.insert(index, object)
-
-    def _make_method(method):
-        def _method(self, *args, **kwargs):
-            return method(self.__lstobj__, *args, **kwargs)
-
-        return _method
-
-    def _make_mutablility_check_method(method):
-        def _method(self, *args, **kwargs):
-            self._ensure_mutable_()
-            return method(self.__lstobj__, *args, **kwargs)
-
-        return _method
 
     __proxy_class__ = list
     __proxy_methods__ = [
@@ -151,5 +153,3 @@ class SwitchableList(ProxyBase):
             _make_method
         ]
     ]
-
-    del _make_method, _make_mutablility_check_method

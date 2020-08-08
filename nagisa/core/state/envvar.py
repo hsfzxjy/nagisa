@@ -1,9 +1,6 @@
 import os
 import ast
-import glob
 import typing
-import traceback
-import pathlib
 import logging
 
 from nagisa.core.state.scheme import SchemeNode
@@ -33,7 +30,7 @@ class _EnvvarRegistry:
 
     def __new__(cls):
         if cls.__instance__ is not None:
-            return __instance__
+            return cls.__instance__
         cls.__instance__ = object.__new__(cls)
 
         return cls.__instance__
@@ -41,24 +38,28 @@ class _EnvvarRegistry:
     def __init__(self):
         self._store_ = None
 
+    @property
+    def store(self):
+        return self._store_
+
     def _parse_Call_(self, node: ast.Call, func_names: [str]):
         if (not isinstance(node.func, ast.Name) or node.func.id not in func_names):
-            return
+            return None
 
         env_name = prim_ast.cast(node.args[0], str)
         if env_name is None:
-            return
+            return None
 
         keywords = {n.arg: n.value for n in node.keywords}
         if not set(keywords).issubset({"T", "default"}):
-            return
+            return None
 
         T = str
         if "T" in keywords:
             T = prim_ast.parse_type(keywords["T"])
 
         if T is prim_ast.Malformed:
-            return
+            return None
 
         return env_name, T
 
@@ -78,7 +79,7 @@ class _EnvvarRegistry:
 
         start_dir = resolve_until_exists(dirname, caller_level=caller_level - 1)
         if start_dir is None:
-            logger.warn(f"`dirname` {dirname!r} resolved to nothing, scanning skipped")
+            logger.warning("`dirname` {!r} resolved to nothing, scanning skipped".format(dirname))
             return
 
         func_names = set(func_names) | set(self.__acceptable_func_names__)
@@ -106,14 +107,15 @@ class _EnvvarRegistry:
 _registry = _EnvvarRegistry()
 
 
+# pylint: disable=invalid-envvar-default
 def option(envvar_name, *, T=str, default=None):
     env_value = _empty = object()
 
     env_value = os.getenv(envvar_name, _empty)
-    if _registry._store_ is None:
-        logger.warn("Envvar tracking is not enabled")
+    if _registry.store is None:
+        logger.warning("Envvar tracking is not enabled")
     else:
-        env_value = _registry._store_.value_by_path(envvar_name, env_value)
+        env_value = _registry.store.value_by_path(envvar_name, env_value)
 
     if env_value is _empty:
         return default

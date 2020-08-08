@@ -1,12 +1,8 @@
-import re
-import types
-import inspect
-import textwrap
 import functools
 import itertools
 import importlib
 from collections import namedtuple
-from typing import Union, List, Tuple, Dict, Callable, Optional, Any, Set
+from typing import List, Dict, Callable, Optional, Any, Set
 
 from nagisa.core.misc.naming import isidentifier, isaccessor
 
@@ -16,6 +12,7 @@ from .hof import make_function, decorative
 __all__ = [
     "adapt",
     "adapt_spec",
+    "make_annotator",
 ]
 
 _ParsedAdapterMapping = namedtuple("_ParsedAdapterMapping", ("args", "kwargs"))
@@ -133,6 +130,35 @@ def adapt(
 
     new_f.__is_adapter__ = True
     return new_f
+
+
+def make_annotator(
+    f: Callable,
+    spec,
+    slot_name: str,
+    init_fn: Callable,
+    annotate_fn: Callable,
+    *,
+    inplace: bool = False
+) -> Callable:
+    def _decorator(host_f):
+        nonlocal f
+        value = getattr(host_f, slot_name, None)
+        if value is None:
+            value = init_fn()
+            setattr(host_f, slot_name, value)
+        if f is not None:
+            f = adapt_spec(spec, f)
+            if inplace:
+                value = annotate_fn(value, f)
+                setattr(host_f, slot_name, value)
+            else:
+                annotate_fn(value, f)
+        return host_f
+
+    _decorator.__init_fn__ = init_fn
+
+    return _decorator
 
 
 @decorative(name='f')

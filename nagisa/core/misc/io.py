@@ -7,13 +7,14 @@ import pathlib
 import logging
 import hashlib
 import tempfile
-import warnings
 import traceback
 import functools
 import http.cookiejar
 import urllib.request
-from urllib.parse import urlparse, quote
+from urllib.parse import quote
 from typing import Optional, Union, Callable
+
+import torch
 
 from nagisa.core.misc.progressbar import tqdm
 from nagisa.core.misc.registry import FunctionSelector
@@ -127,8 +128,8 @@ _google_drive_confirm_regexp = re.compile(rb"confirm=([\w\d_\-]+)")
 @URLOpener.r(lambda url: _google_drive_pattern_.match(url) is not None)
 def google_drive_opener(url):
     matched = _google_drive_pattern_.match(url)
-    id = matched.group("id") or matched.group("id2")
-    url = f"https://drive.google.com/uc?id={id}"
+    file_id = matched.group("id") or matched.group("id2")
+    url = f"https://drive.google.com/uc?id={file_id}"
 
     cj = http.cookiejar.CookieJar()
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
@@ -145,8 +146,8 @@ def google_drive_opener(url):
         confirm_code = confirm_code[0].decode("UTF-8")
 
         return opener.open(f"{url}&confirm={confirm_code}")
-    else:
-        return response
+
+    return response
 
 
 @URLOpener.r(lambda: True)

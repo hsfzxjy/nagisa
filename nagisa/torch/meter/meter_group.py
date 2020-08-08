@@ -1,16 +1,13 @@
 import enum
-import types
-import itertools
 from weakref import WeakSet
 from types import FunctionType
 
 from nagisa.core.state.config import cfg_property
 from nagisa.core.functools import adapt, make_function
 from .meter_base import build_meter
-from ._registries import MeterRegistry
 
 
-class _EnumMixin(object):
+class _EnumMixin:
     @classmethod
     def _missing_(cls, value: str):
         return cls.__members__[value.upper()]
@@ -60,6 +57,7 @@ class BaseMeterGroupMeta(type):
 _meter_initializer_types = (tuple, type, str, FunctionType)
 
 
+# pylint: disable=no-member
 class BaseMeterGroup(metaclass=BaseMeterGroupMeta):
 
     _DEFINED_SCOPES = ("epoch", "iter")
@@ -87,7 +85,7 @@ class BaseMeterGroup(metaclass=BaseMeterGroupMeta):
     def add_group(self, group_name, signature, spec):
         if self.has_group(group_name):
             assert spec is None or set(spec) == set(self.groups)
-            return
+            return self
 
         self.groups[group_name] = meters = {}
         for meter_key, spec_item in spec.items():
@@ -158,8 +156,8 @@ class BaseMeterGroup(metaclass=BaseMeterGroupMeta):
 
     def reset(self, scope=None):
         if scope is None:
-            for scope in self.Scope:
-                self.reset(scope)
+            for meter_scope in self.Scope:
+                self.reset(meter_scope)
             return self
 
         scope = self.Scope(scope)

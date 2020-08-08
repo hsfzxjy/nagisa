@@ -1,7 +1,3 @@
-import enum
-import inspect
-import collections
-from functools import partial
 from nagisa.core.misc.cache import Scope
 from nagisa.core.misc.registry import MultiEntryConditionalFunctionRegistry, Registry
 

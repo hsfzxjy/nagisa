@@ -1,3 +1,4 @@
+# pylint: disable=unused-import
 import logging
 
 logger = logging.getLogger(__name__)
@@ -5,7 +6,7 @@ logger = logging.getLogger(__name__)
 try:
     from tqdm import tqdm
 except ModuleNotFoundError:
-    logger.warn("`tqdm` not found, progress bar disabled")
+    logger.warning("`tqdm` not found, progress bar disabled")
 
     class tqdm:
         def f(self, *args, **kwargs):

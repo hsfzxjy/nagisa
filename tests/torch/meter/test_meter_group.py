@@ -37,28 +37,31 @@ class TestBaseMeterGroup(TestBase):
     def test_add_group_spec_init_only(self):
         self.group.add_group("group1", ["arg1", "arg2"], {"m1": "Avg", "m2": "Avg"})
         self.group.update("group1", inputs={"arg1": 42, "arg2": 2})
-        self.assertEqual(self.group.compute("group1"), {"m1": 21, "m2": 21})
+        self.assertEqual(self.group.compute("group1"), {
+            "m1": t(21.),
+            "m2": t(21.),
+        })
 
         self.group.remove_group("group1").add_group("group1", ["arg1", "arg2"], {"m1": ("Avg", )})
         self.group.update("group1", inputs={"arg1": 42, "arg2": 2})
-        self.assertEqual(self.group.compute("group1"), {"m1": 21})
+        self.assertEqual(self.group.compute("group1"), {"m1": t(21.)})
 
         self.group.remove_group("group1").add_group(
             "group1", ["arg1", "arg2"], {"m1": self.mbi.Avg}
         )
         self.group.update("group1", inputs={"arg1": 42, "arg2": 2})
-        self.assertEqual(self.group.compute("group1"), {"m1": 21})
+        self.assertEqual(self.group.compute("group1"), {"m1": t(21.)})
 
         self.group.remove_group("group1").add_group(
             "group1", ["arg1", "arg2"], {"m1": (self.mbi.Avg, )}
         )
         self.group.update("group1", inputs={"arg1": 42, "arg2": 2})
-        self.assertEqual(self.group.compute("group1"), {"m1": 21})
+        self.assertEqual(self.group.compute("group1"), {"m1": t(21.)})
 
     def test_add_group_spec_init_and_mapping_only(self):
         self.group.add_group("group1", ["arg1", "arg2"], {"m1": ["Avg", ["arg1.value"]]})
         self.group.update("group1", inputs={"arg1": {"value": 42}, "arg2": None})
-        self.assertEqual(self.group.compute("group1"), {"m1": 42})
+        self.assertEqual(self.group.compute("group1"), {"m1": t(42.)})
 
         self.group.remove_group("group1").add_group(
             "group1",
@@ -68,32 +71,49 @@ class TestBaseMeterGroup(TestBase):
                 "num": "arg1.num"
             }]},
         )
-        self.group.update("group1", inputs={"arg1": {"value": 42, "num": 2}, "arg2": None})
-        self.assertEqual(self.group.compute("group1"), {"m1": 21})
+        self.group.update(
+            "group1", inputs={
+                "arg1": {
+                    "value": t(42.),
+                    "num": t(2.),
+                },
+                "arg2": None
+            }
+        )
+        self.assertEqual(self.group.compute("group1"), {"m1": t(21.)})
 
     def test_update_overload(self):
         self.group.update("group1", a=42, b=2, spec={"m": "Avg"})
         self.group.update("group1", a=42, b=2)
-        self.assertEqual(self.group.compute("group1"), {"m": 21})
+        self.assertEqual(self.group.compute("group1"), {"m": t(21.)})
 
         self.group.remove_group("group1").update("group1", b=42, a=2, spec={"m": "Avg"})
         self.group.update("group1", b=42, a=2)
-        self.assertEqual(self.group.compute("group1"), {"m": 21})
+        self.assertEqual(self.group.compute("group1"), {"m": t(21.)})
 
         self.group.remove_group("group1").update("group1", b=42, a=2, spec={"m": "Avg"})
         self.group.update("group1", b=2, a=42)
-        self.assertEqual(self.group.compute("group1"), {"m": 1})
+        self.assertEqual(self.group.compute("group1"), {"m": t(1.)})
 
         self.group.remove_group("group1").update(
             "group1", inputs=dict(a=42, b=2), spec={"m": "Avg"}
         )
         self.group.update("group1", a=42, b=2)
-        self.assertEqual(self.group.compute("group1"), {"m": 21})
+        self.assertEqual(self.group.compute("group1"), {"m": t(21.)})
 
     def test_compute_all(self):
         self.group.add_group("group1", ["a"], {"m": "Avg"}).add_group("group2", ["a"], {"m": "Avg"})
         self.group.update('group1', a=42).update('group2', a=42)
-        self.assertEqual(self.group.compute(), {'group1': {'m': 42}, 'group2': {'m': 42}})
+        self.assertEqual(
+            self.group.compute(), {
+                'group1': {
+                    'm': t(42.)
+                },
+                'group2': {
+                    'm': t(42.),
+                }
+            }
+        )
 
     def test_reset_iter(self):
         self.group.update(
@@ -107,8 +127,8 @@ class TestBaseMeterGroup(TestBase):
         self.assertEqual(
             self.group.compute('group1'),
             {
-                'm1': 2,
-                'm2': 1.5
+                'm1': t(2.),
+                'm2': t(1.5)
             },
         )
 
@@ -124,8 +144,8 @@ class TestBaseMeterGroup(TestBase):
         self.assertEqual(
             self.group.compute('group1'),
             {
-                'm1': 1.5,
-                'm2': 2,
+                'm1': t(1.5),
+                'm2': t(2.),
             },
         )
 
@@ -141,8 +161,8 @@ class TestBaseMeterGroup(TestBase):
         self.assertEqual(
             self.group.compute('group1'),
             {
-                'm1': 2,
-                'm2': 2,
+                'm1': t(2.),
+                'm2': t(2.),
             },
         )
 
@@ -154,11 +174,11 @@ class TestDefaultMeterGroup(TestBase):
 
     def test_update_loss(self):
         self.group.update_loss({'main': 1, 'aux': .5, 'ce': .5})
-        self.assertEqual(self.group.compute_loss(), {'main': 1, 'aux': .5, 'ce': .5})
+        self.assertEqual(self.group.compute_loss(), {'main': t(1.), 'aux': t(.5), 'ce': t(.5)})
 
     def test_update_time(self):
         self.group.update_time({'main': 1, 'aux': .5, 'ce': .5})
-        self.assertEqual(self.group.compute_time(), {'main': 1, 'aux': .5, 'ce': .5})
+        self.assertEqual(self.group.compute_time(), {'main': t(1.), 'aux': t(.5), 'ce': t(.5)})
 
     def test_update_metrics(self):
         from ignite.metrics.confusion_matrix import ConfusionMatrix

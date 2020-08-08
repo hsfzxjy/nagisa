@@ -1,56 +1,86 @@
+import abc
 import unittest
 
 import torch
 import numpy as np
 
+from nagisa.core.functools import wraps
+
+
+class _Wrapper(abc.ABC):
+    _klass_ = type(None)
+
+    def __init__(self, array):
+        assert isinstance(array, self._klass_)
+        self._array_ = array
+
+    def __repr__(self):
+        return repr(self._array_)
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            other = other._array_
+        return self._equal_(self._array_, other)
+
+    @abc.abstractclassmethod
+    def _equal_(self, first, second):
+        pass
+
+
+class _TensorWrapper(_Wrapper):
+    _klass_ = torch.Tensor
+
+    def _equal_(self, t1, t2):
+        return (
+            isinstance(t2, torch.Tensor) and t1.device == t2.device and t1.shape == t2.shape
+            and t1.dtype == t2.dtype and (t1 == t2).all()
+        )
+
+
+class _NdarrayWrapper(_Wrapper):
+    _klass_ = np.ndarray
+
+    def _equal_(self, a1, a2):
+        return (
+            isinstance(a2, np.ndarray) and a1.shape == a2.shape and a1.strides == a2.strides
+            and np.array_equal(a1, a2)
+        )
+
+
+def wrap_data(obj):
+    if isinstance(obj, (list, tuple, set, frozenset)):
+        return type(obj)(wrap_data(x) for x in obj)
+    elif isinstance(obj, dict):
+        return {k: wrap_data(v) for k, v in obj.items()}
+    elif isinstance(obj, torch.Tensor):
+        return _TensorWrapper(obj)
+    elif isinstance(obj, np.ndarray):
+        return _NdarrayWrapper(obj)
+    # elif isinstance(obj, Iterable):
+    #     return (wrap_data(x) for x in obj)
+    else:
+        return obj
+
+
+def _build_method(method_name):
+
+    method = getattr(unittest.TestCase, method_name)
+
+    def _wrapper(self, first, second, *args, **kwargs):
+        first, second = map(wrap_data, (first, second))
+        return method(self, first, second, *args, **kwargs)
+
+    return wraps(method)(_wrapper)
+
 
 class TorchTestCase(unittest.TestCase):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.addTypeEqualityFunc(torch.Tensor, "assertTensorEqual")
-        self.addTypeEqualityFunc(np.ndarray, "assertArrayEqual")
-
-    def assertTensorEqual(self, t1: torch.Tensor, t2: torch.Tensor, msg=None):
-        self.assertIsInstance(t1, torch.Tensor, "First argument is not a Tensor")
-        self.assertIsInstance(t2, torch.Tensor, "Second argument is not a Tensor")
-
-        standardMsg = ""
-        if t1.device != t2.device:
-            standardMsg += f"Device {t1.device} != {t2.device}\n"
-        elif t1.size() != t2.size():
-            standardMsg += f"Tensor shape {t1.size()} != {t2.size()}\n"
-        elif (t1 != t2).any():
-            standardMsg += f"Tensor {t1} != {t2}\n"
-        else:
-            return
-
-        self.fail(self._formatMessage(msg, standardMsg))
-
-    def assertArrayEqual(self, t1, t2, msg=None):
-        self.assertIsInstance(t1, np.ndarray, "First argument is not numpy.ndarray")
-        self.assertIsInstance(t2, np.ndarray, "Second argument is not numpy.ndarray")
-
-        standardMsg = ""
-        if t1.shape != t2.shape:
-            standardMsg += f"Tensor shape {t1.shape} != {t2.shape}\n"
-        elif not (t1 == t2).all():
-            standardMsg += f"Tensor {t1} != {t2}\n"
-        else:
-            return
-
-        self.fail(self._formatMessage(msg, standardMsg))
-
-    def assertEqual(self, x, y, msg=None):
-        if isinstance(x, dict) and isinstance(y, dict):
-            self.assertSetEqual(set(x), set(y))
-            for key in x:
-                self.assertEqual(x[key], y[key], msg)
-        elif isinstance(x, (list, tuple)) and type(x) is type(y):
-            self.assertEqual(len(x), len(y))
-            for x_item, y_item in zip(x, y):
-                self.assertEqual(x_item, y_item, msg)
-        elif torch.Tensor in map(type, (x, y)):
-            self.assertIs(type(x), type(y))
-            super().assertEqual(x, y, msg)
-        else:
-            super().assertEqual(x, y, msg)
+    for name in [
+            'assertEqual',
+            'assertNotEqual',
+            'assertSequenceEqual',
+            'assertListEqual',
+            'assertTupleEqual',
+            'assertSetEqual',
+            'assertDictEqual',
+    ]:
+        locals()[name] = _build_method(name)

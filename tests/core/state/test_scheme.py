@@ -115,7 +115,7 @@ class TestAddEntry(unittest.TestCase):
 
     def test_add_duplicated_node(self):
         with self.assertRaises(AssertionError):
-            x = scheme.SchemeNode(is_container=True, ).entry("foo", 1).entry("foo", 2)
+            scheme.SchemeNode(is_container=True, ).entry("foo", 1).entry("foo", 2)
 
 
 class TestAddAlias(unittest.TestCase):
@@ -138,59 +138,53 @@ class TestAddAlias(unittest.TestCase):
 
     def test_add_broken_alias(self):
         with self.assertRaises(RuntimeError):
-            x = (
-                scheme.SchemeNode(is_container=True).entry(
-                    "foo",
-                    1,
-                ).alias(
-                    "bar",
-                    "fooo",
-                ).alias(
-                    "baz",
-                    "bar",
-                ).finalize()
-            )
+            scheme.SchemeNode(is_container=True).entry(
+                "foo",
+                1,
+            ).alias(
+                "bar",
+                "fooo",
+            ).alias(
+                "baz",
+                "bar",
+            ).finalize()
 
     def test_add_duplicated_alias(self):
         with self.assertRaises(AssertionError):
-            x = (
-                scheme.SchemeNode(is_container=True).entry(
-                    "foo",
-                    1,
-                ).entry(
-                    "bar",
-                    2,
-                ).alias(
-                    "bar",
-                    "foo",
-                ).finalize()
-            )
+            scheme.SchemeNode(is_container=True).entry(
+                "foo",
+                1,
+            ).entry(
+                "bar",
+                2,
+            ).alias(
+                "bar",
+                "foo",
+            ).finalize()
 
     def test_add_cyclic_alias(self):
         with self.assertRaises(RuntimeError):
-            x = (
-                scheme.SchemeNode(is_container=True, ).entry(
-                    "foo",
-                    1,
-                ).alias(
-                    "bar",
-                    "baz",
-                ).alias(
-                    "baz",
-                    "bar",
-                ).finalize()
-            )
+            scheme.SchemeNode(
+                is_container=True,
+            ).entry(
+                "foo",
+                1,
+            ).alias(
+                "bar",
+                "baz",
+            ).alias(
+                "baz",
+                "bar",
+            ).finalize()
 
         with self.assertRaises(RuntimeError):
-            x = (
-                scheme.SchemeNode(is_container=True).entry(
-                    "foo",
-                    1,
-                ).alias(
-                    "bar",
-                    "bar",
-                ).finalize()
-            )
+            scheme.SchemeNode(is_container=True).entry(
+                "foo",
+                1,
+            ).alias(
+                "bar",
+                "bar",
+            ).finalize()
 
 
 class TestGetAttr(unittest.TestCase):

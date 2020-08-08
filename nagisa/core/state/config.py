@@ -1,9 +1,7 @@
-import functools
-import argparse
 from nagisa.core.state import envvar
 from nagisa.core.state.scheme import SchemeNode
 from nagisa.core.functools import adapt_spec
-from nagisa.core.primitive.typing import cast, str_to_object, Malformed
+from nagisa.core.primitive.typing import str_to_object
 
 
 class ConfigNode(SchemeNode):
@@ -73,23 +71,23 @@ class ConfigNode(SchemeNode):
     def track_envvar(self, dirname=".", func_names=()):
         self.entry("ENVVAR", self.__class__(is_container=True, attributes=["w"]))
         envvar._registry.sync_with(self.ENVVAR)
-        envvar._registry.scan(dirname, caller_level=-2)
+        envvar._registry.scan(dirname, caller_level=-2, func_names=func_names)
         return self
 
     @classmethod
     def _handle_singleton_(cls, instance):
         if cls.__instance__ is not None:
-            raise RuntimeError  # TODO detailed info
+            raise RuntimeError("No singleton instance has been initialized")
         cls.__instance__ = instance
 
     @classmethod
     def instance(cls, raise_exc=False):
         if raise_exc and cls.__instance__ is None:
-            raise RuntimeError("This feature requires a singleton config node being initialized.")
+            raise RuntimeError("This feature requires a singleton config node being initialized")
         return cls.__instance__
 
 
-class ConfigValue(object):
+class ConfigValue:
 
     _empty = object()
 
@@ -127,13 +125,14 @@ class ConfigValue(object):
             if cfg is None:
                 raise RuntimeError(f"{self!r} requires a singleton config node being initialized")
             return cfg.value_by_path(self.__config_path__)
-        elif self.__value__ is not self._empty or self.__default__ is not self._empty:
+
+        if self.__value__ is not self._empty or self.__default__ is not self._empty:
             value = self.__value__ if self.__value__ is not self._empty else self.__default__
             if callable(value):
                 return value(*args, **kwargs)
             return value
-        else:
-            raise RuntimeError(f"Neither config path nor value is set for {self!r}")
+
+        raise RuntimeError(f"Neither config path nor value is set for {self!r}")
 
     func = value
 

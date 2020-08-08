@@ -24,17 +24,13 @@ __all__ = [
 class _ColorfulFormatter(logging.Formatter):
     def __init__(self, *args, **kwargs):
         self._root_name = kwargs.pop("root_name") + "."
-        self._abbrev_name = kwargs.pop("abbrev_name", "")
-        if len(self._abbrev_name):
-            self._abbrev_name = self._abbrev_name + "."
         super(_ColorfulFormatter, self).__init__(*args, **kwargs)
 
     def formatMessage(self, record):
-        record.name = record.name.replace(self._root_name, self._abbrev_name)
         log = super(_ColorfulFormatter, self).formatMessage(record)
         if colored is None:
             return log
-        elif record.levelno == logging.WARNING:
+        if record.levelno == logging.WARNING:
             prefix = colored("WARNING", "red", attrs=["blink"])
         elif record.levelno == logging.ERROR or record.levelno == logging.CRITICAL:
             prefix = colored("ERROR", "red", attrs=["blink", "underline"])
@@ -53,8 +49,7 @@ def _find_caller():
     while frame is not None:
         code = frame.f_code
         if os.path.join("logging", "__init__.") not in code.co_filename:
-            mod_name = frame.f_globals["__name__"]
-            return mod_name, (code.co_filename, frame.f_lineno, code.co_name)
+            return (code.co_filename, frame.f_lineno, code.co_name)
         frame = frame.f_back
 
 
@@ -75,7 +70,7 @@ class _Logger(logging.Logger):
             key = (key, )
         assert len(key) > 0
 
-        caller_module, caller_key = _find_caller()
+        caller_key = _find_caller()
         hash_key = ()
         if "caller" in key:
             hash_key = hash_key + caller_key
@@ -96,13 +91,13 @@ class _Logger(logging.Logger):
         return self.log_first_n(msg, n=1, lvl=lvl, key=key)
 
     def log_every_n(self, msg, n=1, *, lvl=logging.INFO):
-        caller_module, key = _find_caller()
+        key = _find_caller()
         self._LOG_COUNTER[key] += 1
         if n == 1 or self._LOG_COUNTER[key] % n == 1:
             self.log(lvl, msg)
 
     def log_every_n_seconds(self, msg, n=1, *, lvl=logging.INFO):
-        caller_module, key = _find_caller()
+        key = _find_caller()
         last_logged = self._LOG_TIMER.get(key, None)
         current_time = time.time()
         if last_logged is None or current_time - last_logged >= n:

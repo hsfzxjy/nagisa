@@ -1,8 +1,8 @@
 from torch.utils.data import DataLoader as torch_DataLoader
 from torch.utils.data.dataloader import default_collate
 
-from ._registries import Collate
 from nagisa.core.state.config import cfg_property
+from ._registries import Collate
 
 __all__ = [
     "DataLoader",

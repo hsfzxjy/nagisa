@@ -1,5 +1,5 @@
+# pylint: disable=redefined-builtin
 import contextlib
-from collections import deque
 
 from nagisa.core.misc.cache import ScopedCache, Scope
 
@@ -8,7 +8,7 @@ from ._registries import Resource, Item
 IDLIST_RES_NAME = "id_list"
 
 
-class DataResolver(object):
+class DataResolver:
     def __init__(self, cfg, meta):
         self.cfg, self.meta = cfg, meta
         self.__cache__ = ScopedCache()
@@ -19,23 +19,28 @@ class DataResolver(object):
         if res_key not in dep_mapping:
             res_f = Resource.select(res_key, self.cfg, self.meta)
             if res_f is None:
-                raise RuntimeError  # TODO
+                raise RuntimeError(
+                    "Bad resource dependency: {} (missing)".format(' -> '.join(path))
+                )
             dep_mapping[res_key] = res_f
         res_f = dep_mapping[res_key]
 
         if expected_scope is not None and expected_scope > res_f.__scope__:
-            raise RuntimeError  # TODO
+            raise RuntimeError(
+                f"Bad resource scope: expect {res_key} to have scope {expected_scope}"
+            )
 
         if expected_scope is None:
             expected_scope = res_f.__scope__
 
         for dep in res_f.__deps__:
             if dep in path:
-                raise RuntimeError  # TODO
+                raise RuntimeError(
+                    'Cyclic resource dependency: {}'.format(' -> '.join(path + [dep]))
+                )
             self._check_resource_dep_(path + [dep], expected_scope, dep_mapping)
 
     def _check_item_dep_(self, item_key, dep_mapping):
-        path = [item_key]
         item_f = Item.select(item_key, self.cfg, self.meta)
         item_scope = item_f.__scope__
 
@@ -58,6 +63,7 @@ class DataResolver(object):
 
         self.__dep_checked__ = True
 
+    # pylint: disable=inconsistent-return-statements
     def _invoke_(self, f, id, deps):
         if f.__scope__ == Scope.LOCAL:
             return f(self.cfg, self.meta, id, *deps)

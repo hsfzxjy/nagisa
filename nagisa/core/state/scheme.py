@@ -1,3 +1,5 @@
+# pylint: disable=attribute-defined-outside-init
+
 import weakref
 import inspect
 import collections
@@ -102,8 +104,8 @@ class SchemeNode:
         node = self._entries_[name]
         if node._meta_.is_container:
             return node
-        else:
-            return node._value_
+
+        return node._value_
 
     __getitem__ = __getattr__
 
@@ -211,10 +213,10 @@ class SchemeNode:
                     raise AttributeError(
                         f"Entry {entry_name!r} not found on container {self.dotted_path()!r}"
                     )
-                else:
-                    host = self
-                    obj = {entry_name: obj}
-                    action = "merge"
+
+                host = self
+                obj = {entry_name: obj}
+                action = "merge"
             else:
                 host = self._entries_[entry_name]
 

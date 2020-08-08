@@ -1,9 +1,10 @@
 from collections.abc import Iterable
 
-from nagisa.torch.misc import numeric_typing as nt
+from nagisa.torch.misc import casting
 from .meter_base import MeterBase, reinit__is_reduced, sync_all_reduce
 
 
+# pylint: disable=attribute-defined-outside-init
 class Accumulation(MeterBase, key=()):
     def __init__(self):
         super().__init__()
@@ -16,10 +17,13 @@ class Accumulation(MeterBase, key=()):
 
     @reinit__is_reduced
     def update(self, value, num=None):
-        value_type = nt.type_of(value, raise_exc=True)
+        if self.n_instances:
+            value = casting.as_(value, self.sum)
+        else:
+            value = casting.to_tensor(value)
 
         if num is None:
-            value_shape = nt.shape_of(value)
+            value_shape = value.size()
             should_accumulate = len(value_shape) > 1
             num = value_shape[0] if should_accumulate else 1
         else:
@@ -28,12 +32,12 @@ class Accumulation(MeterBase, key=()):
 
         if should_accumulate:
             assert isinstance(value, Iterable)
-            value = value.sum(**{nt.axis_kw(value_type): 0})
+            value = value.sum(dim=0)
 
         if not self.n_instances:
-            self.sum = nt.as_float(nt.detach(value))
+            self.sum = value.float()
         else:
-            self.sum += nt.cast_as(value, self.sum)
+            self.sum += value
 
         self.n_instances += num
 
@@ -45,5 +49,5 @@ class Accumulation(MeterBase, key=()):
 class Avg(Accumulation, key=("builtin.Avg", "Avg")):
     def compute(self):
         if self.n_instances == 0:
-            raise ValueError  # TODO
+            raise ValueError("`Avg.compute()` should be called after at least one example updated")
         return self.sum / self.n_instances

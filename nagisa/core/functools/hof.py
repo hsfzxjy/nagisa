@@ -5,7 +5,6 @@ import functools
 from typing import Optional, Callable
 
 __all__ = [
-    'make_annotator',
     'make_function',
     'emulate',
     'wraps',
@@ -13,37 +12,7 @@ __all__ = [
 ]
 
 
-def make_annotator(
-    f: Callable,
-    spec,
-    slot_name: str,
-    init_fn: Callable,
-    annotate_fn: Callable,
-    *,
-    inplace: bool = False
-) -> Callable:
-    from nagisa.core.functools.adapter import adapt_spec
-
-    def _decorator(host_f):
-        nonlocal f
-        value = getattr(host_f, slot_name, None)
-        if value is None:
-            value = init_fn()
-            setattr(host_f, slot_name, value)
-        if f is not None:
-            f = adapt_spec(spec, f)
-            if inplace:
-                value = annotate_fn(value, f)
-                setattr(host_f, slot_name, value)
-            else:
-                annotate_fn(value, f)
-        return host_f
-
-    _decorator.__init_fn__ = init_fn
-
-    return _decorator
-
-
+# pylint: disable=redefined-builtin
 def make_function(
     name: str,
     body: str,
@@ -100,7 +69,8 @@ def _call_fragment(sig: inspect.Signature, skipped=frozenset()) -> str:
     for name, p in sig.parameters.items():
         if name in skipped:
             continue
-        elif p.kind in {P.POSITIONAL_ONLY}:
+
+        if p.kind in {P.POSITIONAL_ONLY}:
             fragments.append(name)
         elif p.kind in {P.KEYWORD_ONLY, P.POSITIONAL_OR_KEYWORD}:
             fragments.append(f'{name}={name}')

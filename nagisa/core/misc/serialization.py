@@ -1,15 +1,14 @@
-import os
 import logging
 from pathlib import Path
+
+from nagisa.core.misc.io import resolve, resolve_until_exists
 
 logger = logging.getLogger(__name__)
 
 try:
     import yaml
 except ModuleNotFoundError:
-    logger.warn("Package `PyYAML` not found")
-
-from nagisa.core.misc.io import resolve, resolve_until_exists
+    logger.warning("Package `PyYAML` not found")
 
 BASE_KEY = "_BASE_"
 
@@ -38,8 +37,8 @@ def load_yaml_with_base(filename: str, allow_unsafe: bool = False, caller_level:
         if not allow_unsafe:
             raise
         logger.warning(
-            "Loading config {} with yaml.unsafe_load. Your machine may "
-            "be at risk if the file contains malicious content.".format(filename)
+            f"Loading config {filename} with yaml.unsafe_load. Your machine may "
+            "be at risk if the file contains malicious content."
         )
         f.close()
         with fn.open("r") as f:

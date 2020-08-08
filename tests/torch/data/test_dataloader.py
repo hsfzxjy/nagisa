@@ -1,6 +1,5 @@
 import sys
 import torch
-import unittest
 
 from nagisa.torch.misc.test import TorchTestCase
 
@@ -11,7 +10,6 @@ class BaseDatasetTestCase(TorchTestCase):
             del sys.modules[n]
 
         from nagisa.torch import data as s
-        from nagisa.torch.data.dataloader import DataLoader
 
         self.s = s
 
@@ -28,14 +26,6 @@ class BaseDatasetTestCase(TorchTestCase):
         s.item_keys.set(["item1", "item2", "item3"])
         self.dataset = s.get_dataset("", "", cfg="mock")
 
-    def assertItemsEqual(self, items_seq1, items_seq2):
-        self.assertEqual(len(items_seq1), len(items_seq2))
-
-        for items_dict1, items_dict2 in zip(items_seq1, items_seq2):
-            self.assertSequenceEqual(items_dict1.keys(), items_dict2.keys())
-
-            for key in items_dict1:
-                self.assertTensorEqual(items_dict1[key], items_dict2[key])
 
 
 class TestDataLoader(BaseDatasetTestCase):
@@ -62,7 +52,7 @@ class TestDataLoader(BaseDatasetTestCase):
                 }
             )
         loader = s.DataLoader("mock", self.dataset, batch_size=4)
-        self.assertItemsEqual(list(loader), expected)
+        self.assertListEqual(list(loader), expected)
 
     def test_dataloader_torch_default_collate(self):
         s = self.s
@@ -81,7 +71,7 @@ class TestDataLoader(BaseDatasetTestCase):
                 "item3": items,
             })
         loader = s.DataLoader("mock", self.dataset, batch_size=4)
-        self.assertItemsEqual(list(loader), expected)
+        self.assertListEqual(list(loader), expected)
 
     def test_dataset_as_loader(self):
         expected = []
@@ -94,4 +84,4 @@ class TestDataLoader(BaseDatasetTestCase):
                 "item3": items,
             })
 
-        self.assertItemsEqual(list(self.dataset.as_loader(batch_size=4)), expected)
+        self.assertListEqual(list(self.dataset.as_loader(batch_size=4)), expected)

@@ -2,7 +2,7 @@ import enum
 import contextlib
 
 
-class Cache(object):
+class Cache:
 
     Empty = object()
 

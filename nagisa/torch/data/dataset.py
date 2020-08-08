@@ -1,8 +1,7 @@
-import inspect
 import collections
 from torch.utils.data.dataset import Dataset as torch_Dataset
 
-from nagisa.core.state.config import ConfigNode, ConfigValue, cfg_property
+from nagisa.core.state.config import ConfigValue, cfg_property
 
 from ._data_resolver import DataResolver
 from .transform import apply_transform
@@ -32,7 +31,7 @@ class Dataset(torch_Dataset):
         return len(self._id_list_)
 
     def __getitem__(self, index):
-        id = self._id_list_[index]
+        id = self._id_list_[index]  # pylint: disable=redefined-builtin
 
         items_dict = {}
         for item_key in item_keys.value(self.cfg, self._meta_):
