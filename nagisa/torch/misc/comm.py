@@ -17,6 +17,8 @@ import numpy as np
 import torch
 import torch.distributed as dist
 
+from nagisa.torch.misc.casting import to_tensor
+
 _LOCAL_PROCESS_GROUP = None
 """
 A torch process group which only includes processes that on the same machine as the current process.
@@ -141,6 +143,22 @@ def _pad_to_largest_tensor(tensor, group):
         padding = torch.zeros((max_size - local_size, ), dtype=torch.uint8, device=tensor.device)
         tensor = torch.cat((tensor, padding), dim=0)
     return size_list, tensor
+
+
+def all_reduce(data, group=None):
+    if group is None:
+        group = _get_global_gloo_group()
+
+    if not isinstance(data, torch.Tensor):
+        data, detransformer = to_tensor(data, detrans=True)
+    else:
+        detransformer = None
+
+    dist.all_reduce(data, group=group)
+    if detransformer is not None:
+        data = detransformer(data)
+
+    return data
 
 
 def all_gather(data, group=None):

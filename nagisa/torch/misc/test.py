@@ -1,8 +1,11 @@
+import os
 import abc
 import unittest
 
-import torch
 import numpy as np
+import torch
+import torch.distributed as torch_dist
+import torch.multiprocessing as torch_mp
 
 from nagisa.core.functools import wraps
 
@@ -47,17 +50,15 @@ class _NdarrayWrapper(_Wrapper):
         )
 
 
-def wrap_data(obj):
+def _wrap_data(obj):
     if isinstance(obj, (list, tuple, set, frozenset)):
-        return type(obj)(wrap_data(x) for x in obj)
+        return type(obj)(_wrap_data(x) for x in obj)
     elif isinstance(obj, dict):
-        return {k: wrap_data(v) for k, v in obj.items()}
+        return {k: _wrap_data(v) for k, v in obj.items()}
     elif isinstance(obj, torch.Tensor):
         return _TensorWrapper(obj)
     elif isinstance(obj, np.ndarray):
         return _NdarrayWrapper(obj)
-    # elif isinstance(obj, Iterable):
-    #     return (wrap_data(x) for x in obj)
     else:
         return obj
 
@@ -67,7 +68,7 @@ def _build_method(method_name):
     method = getattr(unittest.TestCase, method_name)
 
     def _wrapper(self, first, second, *args, **kwargs):
-        first, second = map(wrap_data, (first, second))
+        first, second = map(_wrap_data, (first, second))
         return method(self, first, second, *args, **kwargs)
 
     return wraps(method)(_wrapper)
@@ -84,3 +85,40 @@ class TorchTestCase(unittest.TestCase):
             'assertDictEqual',
     ]:
         locals()[name] = _build_method(name)
+
+
+def init_process(rank, size, backend, Q, done_events, exit_event, main):
+    os.environ['MASTER_ADDR'] = '127.0.0.1'
+    os.environ['MASTER_PORT'] = '29500'
+    torch_dist.init_process_group(backend, rank=rank, world_size=size)
+    main(Q, rank, size)
+    done_events[rank].set()
+    exit_event.wait()
+
+
+def mp_call(main, *, size=4, backend='gloo', start_method='spawn'):
+    mp_ctx = torch_mp.get_context(start_method)
+    Q = mp_ctx.SimpleQueue()
+
+    done_events = [mp_ctx.Event() for _ in range(size)]
+    exit_event = mp_ctx.Event()
+
+    processes = torch_mp.start_processes(
+        init_process,
+        args=(size, backend, Q, done_events, exit_event, main),
+        nprocs=size,
+        join=False,
+        start_method=start_method
+    )
+
+    for event in done_events:
+        event.wait()
+
+    result = []
+    while not Q.empty():
+        result.append(Q.get())
+
+    exit_event.set()
+    processes.join()
+
+    return result

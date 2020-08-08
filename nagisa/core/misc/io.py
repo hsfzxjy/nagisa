@@ -43,7 +43,6 @@ def _resolve_path_based_on_caller(path, caller_level=NOT_NAGISA) -> Optional[pat
     if math.isfinite(caller_level):
         assert isinstance(caller_level, int) and caller_level < 0
         frame = tb_list[caller_level - 1]
-        print(frame)
     else:
         root_dir = nagisa_root_dir
         for frame in tb_list[::-1]:

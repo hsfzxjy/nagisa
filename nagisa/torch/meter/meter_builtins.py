@@ -47,6 +47,7 @@ class Accumulation(MeterBase, key=()):
 
 
 class Avg(Accumulation, key=("builtin.Avg", "Avg")):
+    @sync_all_reduce("sum", "n_instances")
     def compute(self):
         if self.n_instances == 0:
             raise ValueError("`Avg.compute()` should be called after at least one example updated")

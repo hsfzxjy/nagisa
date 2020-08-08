@@ -1,11 +1,12 @@
+import functools
 import unittest
 
 import torch
-import functools
 import numpy as np
+import torch.distributed as dist
 
-from nagisa.torch.meter.meter_builtins import Accumulation, Avg
 from nagisa.torch.misc.test import TorchTestCase
+from nagisa.torch.meter.meter_builtins import Accumulation, Avg
 
 t = torch.tensor
 a = functools.partial(np.array, dtype=np.float32)
@@ -14,6 +15,9 @@ a = functools.partial(np.array, dtype=np.float32)
 class TestAccumulation(TorchTestCase):
     def setUp(self):
         self.accum = Accumulation()
+
+        from nagisa.torch.misc.test import mp_call
+        self.mp_call = mp_call
 
     def test_scalar(self):
         self.accum.update(42.)
@@ -88,10 +92,23 @@ class TestAccumulation(TorchTestCase):
         self.accum.reset()
         self.assertEqual(self.accum.compute(), [0.0, 0])
 
+    @staticmethod
+    def main_test_distributed(Q, rank, size):
+        accum = Accumulation()
+        accum.update(rank)
+        Q.put(accum.compute())
+
+    def test_distributed(self):
+        result = self.mp_call(self.main_test_distributed, size=4)
+        self.assertEqual(result, [[t(6.), 4]] * 4)
+
 
 class TestAvg(TorchTestCase):
     def setUp(self):
         self.avg = Avg()
+
+        from nagisa.torch.misc.test import mp_call
+        self.mp_call = mp_call
 
     def test_basic(self):
         self.avg.update(t(42.))
@@ -100,3 +117,13 @@ class TestAvg(TorchTestCase):
 
     def test_empty(self):
         self.assertRaises(ValueError, self.avg.compute)
+
+    @staticmethod
+    def main_test_distributed(Q, rank, size):
+        avg = Avg()
+        avg.update(rank)
+        Q.put(avg.compute())
+
+    def test_distributed(self):
+        result = self.mp_call(self.main_test_distributed, size=4)
+        self.assertEqual(result, [t(1.5)] * 4)

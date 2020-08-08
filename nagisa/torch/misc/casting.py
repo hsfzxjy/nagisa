@@ -1,6 +1,6 @@
-import enum
-import torch
 import numbers
+
+import torch
 
 try:
     import numpy
@@ -31,14 +31,19 @@ def as_(x, target: torch.Tensor) -> torch.Tensor:
     return x
 
 
-def to_tensor(x) -> torch.Tensor:
+def to_tensor(x, *, detrans=False) -> torch.Tensor:
     if isinstance(x, numbers.Number):
+        transform = type(x)
         x = torch.tensor(x)
     elif _SUPPORT_NUMPY and isinstance(x, numpy.ndarray):
+        dtype = x.dtype
+        transform = lambda x: numpy.array(x, dtype=dtype)
         x = torch.from_numpy(x)
     elif isinstance(x, torch.Tensor):
+        dtype, device = x.dtype, x.device
+        transform = lambda x: x.type_as(dtype).to(device)
         x = detach(x)
     else:
         _not_implemented(f"Unknown type {type(x)!r}")
 
-    return x
+    return (x, transform) if detrans else x
