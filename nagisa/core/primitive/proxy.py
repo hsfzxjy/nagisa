@@ -109,6 +109,12 @@ class SwitchableList(ProxyBase):
 
         self.__lstobj__.insert(index, object)
 
+    @wraps(list.__eq__)
+    def __eq__(self, other):
+        if isinstance(other, SwitchableList):
+            other = other.__lstobj__
+        return self.__lstobj__.__eq__(other)
+
     __proxy_class__ = list
     __proxy_methods__ = [
         [
@@ -127,7 +133,6 @@ class SwitchableList(ProxyBase):
             [
                 '__add__',
                 '__contains__',
-                '__eq__',
                 '__format__',
                 '__ge__',
                 '__getitem__',
