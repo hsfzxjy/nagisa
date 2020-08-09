@@ -42,12 +42,8 @@ def emulate(
     assigned=functools.WRAPPER_ASSIGNMENTS,
     updated=functools.WRAPPER_UPDATES,
 ) -> Callable:
-    return functools.update_wrapper(
-        wrapper,
-        wrapped,
-        assigned=assigned + ('__signature__', '__defaults__', '__kwdefaults__'),
-        updated=updated,
-    )
+    assigned = assigned + ('__signature__', '__defaults__', '__kwdefaults__')
+    return functools.update_wrapper(wrapper, wrapped, assigned=assigned, updated=updated)
 
 
 def wraps(
@@ -55,21 +51,13 @@ def wraps(
     assigned=functools.WRAPPER_ASSIGNMENTS,
     updated=functools.WRAPPER_UPDATES,
 ) -> Callable:
-    return functools.partial(
-        emulate,
-        wrapped=wrapped,
-        assigned=assigned,
-        updated=updated,
-    )
+    return functools.partial(emulate, wrapped=wrapped, assigned=assigned, updated=updated)
 
 
-def _call_fragment(sig: inspect.Signature, skipped=frozenset()) -> str:
+def _call_fragment(sig: inspect.Signature) -> str:
     fragments = []
     P = inspect.Parameter
     for name, p in sig.parameters.items():
-        if name in skipped:
-            continue
-
         if p.kind in {P.POSITIONAL_ONLY}:
             fragments.append(name)
         elif p.kind in {P.KEYWORD_ONLY, P.POSITIONAL_OR_KEYWORD}:
@@ -87,8 +75,8 @@ def decorative(*, name: str, f: Optional[Callable] = None) -> Callable:
         sig = inspect.signature(f)
 
         assert name in sig.parameters, f'{f!r} has no argument {name!r}'
-        assert sig.parameters[
-            name].default is None, f'Argument {name!r} should be keyword and default to None'
+        assert sig.parameters[name].default is None, \
+            f'Argument {name!r} should be keyword and default to None'
 
         return emulate(
             make_function(

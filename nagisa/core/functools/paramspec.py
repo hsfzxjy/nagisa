@@ -7,17 +7,6 @@ __all__ = [
     "match_spec",
 ]
 
-
-def _check_static_and_get_params(f: Callable) -> List[str]:
-    sig = inspect.signature(f)
-    if not all(p.kind in (
-            inspect.Parameter.POSITIONAL_ONLY,
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-    ) for p in sig.parameters.values()):
-        raise TypeError(f"Expect all arguments of {f} to be positional, got {sig}")
-    return list(sig.parameters)
-
-
 _ParsedParamSpec = namedtuple("_ParsedParamSpec", ("name", "aliases", "optional", "placeholder"))
 Matched = namedtuple('Matched', ('remaining', 'adapter_signature', 'adapter_args'))
 ParamsSpecType = List[Union[str, type(Ellipsis)]]
@@ -25,49 +14,55 @@ ParamsSpecType = List[Union[str, type(Ellipsis)]]
 _param_spec_pattern = re.compile(r"^(?P<names>[\w\s\|]+)\s*(?P<optional>\?)?|(?P<placeholder>\*)$")
 
 
-def _parse_param_spec(spec_item: str) -> Optional[_ParsedParamSpec]:
-    matched = _param_spec_pattern.match(spec_item)
-
-    if matched is None:
-        return None
-
-    if matched.group("placeholder") is not None:
-        return _ParsedParamSpec("", frozenset(), False, True)
-
-    names = [x.strip() for x in re.split(r"\s*\|\s*", matched.group("names"))]
-    if not all(map(str.isidentifier, names)):
-        return None
-
-    return _ParsedParamSpec(
-        name=names[0],
-        aliases=frozenset(names),
-        optional=matched.group("optional") is not None,
-        placeholder=False,
-    )
-
-
-def _available_name_generator(used_names):
-    counter = 0
-    used_names = set(used_names).copy()
-    while True:
-        name = f"_{counter}"
-        if name not in used_names:
-            used_names.add(name)
-            yield name
-        counter += 1
-
-
 class _ParamSpecMatcher:
     def __init__(self, spec: ParamsSpecType, f: Callable):
         self.parsed_specs = []
         self.has_remaining = False
         self.spec = spec
-        self.params = _check_static_and_get_params(f)
+        self.params = self._check_static_and_get_params_(f)
         self._parse_specs_(spec)
 
-        self._name_generator_ = _available_name_generator(
-            set(x.name for x in self.parsed_specs) | set(self.params)
+    @staticmethod
+    def _check_static_and_get_params_(f: Callable) -> List[str]:
+        sig = inspect.signature(f)
+        if not all(p.kind in (
+                inspect.Parameter.POSITIONAL_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        ) for p in sig.parameters.values()):
+            raise TypeError(f"Expect all arguments of {f} to be positional, got {sig}")
+        return list(sig.parameters)
+
+    @staticmethod
+    def _parse_param_spec_(spec_item: str) -> Optional[_ParsedParamSpec]:
+        matched = _param_spec_pattern.match(spec_item)
+
+        if matched is None:
+            return None
+
+        if matched.group("placeholder") is not None:
+            return _ParsedParamSpec("", frozenset(), False, True)
+
+        names = [x.strip() for x in re.split(r"\s*\|\s*", matched.group("names"))]
+        if not all(map(str.isidentifier, names)):
+            return None
+
+        return _ParsedParamSpec(
+            name=names[0],
+            aliases=frozenset(names),
+            optional=matched.group("optional") is not None,
+            placeholder=False,
         )
+
+    def _name_generator_(self):
+        used_names = set(x.name for x in self.parsed_specs) | set(self.params)
+        counter = 0
+        used_names = set(used_names).copy()
+        while True:
+            name = f"_{counter}"
+            if name not in used_names:
+                used_names.add(name)
+                yield name
+            counter += 1
 
     def _parse_specs_(self, spec):
         for i, x in enumerate(spec):
@@ -79,13 +74,10 @@ class _ParamSpecMatcher:
 
             if not isinstance(x, str):
                 raise RuntimeError(f"Bad param spec: {x!r}")
-            parsed_spec_item = _parse_param_spec(x)
+            parsed_spec_item = self._parse_param_spec_(x)
             if parsed_spec_item is None:
                 raise RuntimeError(f"Bad param spec: {x!r}")
             self.parsed_specs.append(parsed_spec_item)
-
-    def _next_available_name_(self):
-        return next(self._name_generator_)
 
     def match(self):
         adapter_signature = []
@@ -94,12 +86,13 @@ class _ParamSpecMatcher:
         L_spec = len(self.parsed_specs)
         L_param = len(self.params)
         fail_flag = False
+        name_generator = self._name_generator_()
         while spec_ptr < L_spec and param_ptr < L_param and not fail_flag:
             param = self.params[param_ptr]
             spec_item = self.parsed_specs[spec_ptr]
 
             if spec_item.placeholder:
-                matched_name = self._next_available_name_()
+                matched_name = next(name_generator)
             elif param in spec_item.aliases:
                 matched_name = spec_item.name
             elif spec_item.optional:
@@ -121,7 +114,7 @@ class _ParamSpecMatcher:
 
         remaining = self.params[param_ptr:]
         for _ in remaining:
-            placeholder_name = self._next_available_name_()
+            placeholder_name = next(name_generator)
 
             adapter_signature.append(placeholder_name)
             adapter_args.append(placeholder_name)

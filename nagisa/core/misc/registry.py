@@ -86,7 +86,7 @@ class FuncValueMixin:
         if getattr(f, "__is_adapter__", False):
             return f
 
-        return adapt_spec(self._func_spec_, f, preserve_meta=True)
+        return adapt_spec(self._func_spec_, f, keep_meta=True)
 
 
 class FunctionRegistry(FuncValueMixin, Registry):
