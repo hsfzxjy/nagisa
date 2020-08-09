@@ -20,7 +20,7 @@ skip_if_local_and_no_proxy = unittest.skipIf(
 class BaseTestCase(TorchTestCase):
     expected_data = {
         'tensor': torch.tensor(range(100), dtype=float),
-        'string': 'hellow world',
+        'string': 'hello world',
     }
 
     def tearDown(self):
