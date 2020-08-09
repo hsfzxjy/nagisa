@@ -572,6 +572,53 @@ class TestSingleton(unittest.TestCase):
         b = ConfigB()
 
 
+class TestEqual(unittest.TestCase):
+    def test_strict_equal(self):
+        @schema.SchemaNode.from_class
+        class Config:
+            a = 'foo'
+            b: [int]
+            c: [[str], 'w']
+
+            class d:
+                e = False
+
+            f: 'c'
+
+        cfg1, cfg2 = Config(), Config()
+        cfg1.c = ['bar']
+        cfg2.c = ['bar']
+        self.assertEqual(cfg1, cfg2)
+        cfg2.c.append('baz')
+        self.assertNotEqual(cfg1, cfg2)
+
+    def test_unstrict_equal(self):
+        @schema.SchemaNode.from_class
+        class Config1:
+            a = 'foo'
+            b: [int]
+            c: [[str], 'w']
+
+            class d:
+                e = False
+
+            f: 'c'
+
+        @schema.SchemaNode.from_class
+        class Config2:
+            a = 'foo'
+            b: [int]
+            c: [[str]]
+
+            class d:
+                e = False
+
+            g: 'd'
+
+        cfg1, cfg2 = Config1(), Config2()
+        self.assertTrue(cfg1.equal(cfg2))
+
+
 class TestDistributed(ReloadModuleTestCase):
     drop_modules = [
         '^nagisa',
@@ -584,7 +631,7 @@ class TestDistributed(ReloadModuleTestCase):
     @staticmethod
     def main_test_picklable(cfg, Q, *_):
         cfg.c = ['bar']
-        Q.put((cfg.value_dict(), cfg.type_dict(), cfg._finalized_))
+        Q.put(cfg)
 
     def test_pickable(self):
         @self.SchemaNode.from_class
@@ -599,4 +646,4 @@ class TestDistributed(ReloadModuleTestCase):
         cfg = Config().freeze()
         result = self.mp_call(self.main_test_picklable, args=(cfg, ))
         cfg.c = ['bar']
-        self.assertEqual(result, [(cfg.value_dict(), cfg.type_dict(), True)] * 4)
+        self.assertListEqual(result, [cfg] * 4)

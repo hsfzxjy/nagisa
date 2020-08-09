@@ -19,9 +19,15 @@ class NodeMeta:
         self.attributes = attributes
         self.is_container = is_container
 
+    def __eq__(self, other):
+        assert isinstance(other, NodeMeta)
+        return all(getattr(self, name) == getattr(other, name) for name in self.__slots__)
+
 
 class _AttributeSlots:
-    pass
+    def __eq__(self, other):
+        assert isinstance(other, _AttributeSlots)
+        return self.__dict__ == other.__dict__
 
 
 class SchemaNode:
@@ -321,7 +327,44 @@ class SchemaNode:
 
     @property
     def _mutable_(self):
-        return not self._finalized_ or self._meta_.attributes.writable
+        return not self._frozen_ or self._meta_.attributes.writable
+
+    def equal(self, other, *, strict=False):
+        assert isinstance(other, self.__class__)
+
+        def _visitor(node: SchemaNode, other_node: SchemaNode):
+            if other_node is None:
+                return False
+
+            ret = (
+                node._meta_.type == other_node._meta_.type
+                and node._meta_.is_container == other_node._meta_.is_container
+                and node._frozen_ == other_node._frozen_
+            )
+            if strict:
+                ret = ret and node._meta_.attributes == other_node._meta_.attributes
+            if not ret:
+                return False
+
+            if node._meta_.is_container:
+                if strict:
+                    ret = ret and node._alias_entries_ == other_node._alias_entries_
+                if not ret:
+                    return False
+
+                for name, entry in node._entries_.items():
+                    other_entry = other_node._entries_.get(name, None)
+                    if not _visitor(entry, other_entry):
+                        return False
+
+                return True
+            else:
+                return node._value_ == other_node._value_
+
+        return _visitor(self, other)
+
+    def __eq__(self, other):
+        return self.equal(other, strict=True)
 
     def dotted_path(self):
         entry = self
