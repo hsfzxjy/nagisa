@@ -86,7 +86,8 @@ class Test_match_spec(unittest.TestCase):
                 adapter_params,
                 mapping,
             )
-            self.assertEqual(result, expected, msg=f"params = {params!r}, spec={spec!r}")
+            with self.subTest(params=params, spec=spec):
+                self.assertEqual(result, expected)
 
     def test_bad_spec(self):
         cases = [
@@ -99,8 +100,8 @@ class Test_match_spec(unittest.TestCase):
 
         f = _make_function([])
         for spec in cases:
-            with self.assertRaises(AssertionError, msg=f"spec = {spec!r}"):
-                functools.match_spec(spec, f)
+            with self.subTest(spec=spec):
+                self.assertRaises(RuntimeError, functools.match_spec, spec, f)
 
     def test_fail(self):
         cases = [
@@ -110,8 +111,5 @@ class Test_match_spec(unittest.TestCase):
 
         for params, spec in cases:
             f = _make_function(params)
-            with self.assertRaises(
-                    RuntimeError,
-                    msg=f"params = {params!r}, spec = {spec!r}",
-            ):
-                functools.match_spec(spec, f)
+            with self.subTest(params=params, spec=spec):
+                self.assertRaises(RuntimeError, functools.match_spec, spec, f)

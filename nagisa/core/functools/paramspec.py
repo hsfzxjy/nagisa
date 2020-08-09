@@ -72,13 +72,16 @@ class _ParamSpecMatcher:
     def _parse_specs_(self, spec):
         for i, x in enumerate(spec):
             if x is ...:
-                assert i == len(spec) - 1
+                if i != len(spec) - 1:
+                    raise RuntimeError("... should be at the last of spec")
                 self.has_remaining = True
                 continue
 
-            assert isinstance(x, str)
+            if not isinstance(x, str):
+                raise RuntimeError(f"Bad param spec: {x!r}")
             parsed_spec_item = _parse_param_spec(x)
-            assert parsed_spec_item is not None, f"Bad param spec: {x!r}"
+            if parsed_spec_item is None:
+                raise RuntimeError(f"Bad param spec: {x!r}")
             self.parsed_specs.append(parsed_spec_item)
 
     def _next_available_name_(self):

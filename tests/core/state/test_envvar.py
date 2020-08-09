@@ -1,6 +1,6 @@
 import os
-import contextlib
 import unittest
+import contextlib
 
 from nagisa.core.state import envvar
 
@@ -29,18 +29,36 @@ def mock_env(*args):
 class Test_object_from_envvar(unittest.TestCase):
     def test_parse_str(self):
         with mock_env("foo", "bar"):
-            self.assertEqual("bar", envvar.object_from_envvar("foo", str))
+            self.assertEqual(
+                "bar",
+                envvar.object_from_envvar("foo", str),
+            )
         with mock_env("foo", "'bar'"):
-            self.assertEqual("'bar'", envvar.object_from_envvar("foo", str))
+            self.assertEqual(
+                "'bar'",
+                envvar.object_from_envvar("foo", str),
+            )
 
     def test_parse_num(self):
         with mock_env("foo", "1"):
-            self.assertEqual(1, envvar.object_from_envvar("foo", int))
+            self.assertEqual(
+                1,
+                envvar.object_from_envvar("foo", int),
+            )
         with mock_env("foo", "1"):
-            self.assertEqual(1.0, envvar.object_from_envvar("foo", float))
-            self.assertIs(type(envvar.object_from_envvar("foo", float)), float)
+            self.assertEqual(
+                1.0,
+                envvar.object_from_envvar("foo", float),
+            )
+            self.assertIs(
+                type(envvar.object_from_envvar("foo", float)),
+                float,
+            )
         with mock_env("foo", "1" + "0" * 100):
-            self.assertEqual(10 ** 100, envvar.object_from_envvar("foo", int))
+            self.assertEqual(
+                10 ** 100,
+                envvar.object_from_envvar("foo", int),
+            )
 
 
 class Test_option(unittest.TestCase):
@@ -54,10 +72,24 @@ class Test_option(unittest.TestCase):
         with mock_env("FOO1", "['bar']"):
             schema_node.FOO2 = "(True,)"
             schema_node.FOO3 = [42.]
-            self.assertEqual(envvar.option("FOO1", T=[str]), ['bar'])
-            self.assertEqual(envvar.option("FOO2", T=[bool]), [True])
-            self.assertRaises(TypeError, envvar.option, "FOO3", T=[bool])
-            self.assertEqual(envvar.option("FOO2", T=(str, None)), "(True,)")
+            self.assertEqual(
+                envvar.option("FOO1", T=[str]),
+                ['bar'],
+            )
+            self.assertEqual(
+                envvar.option("FOO2", T=[bool]),
+                [True],
+            )
+            self.assertRaises(
+                TypeError,
+                envvar.option,
+                "FOO3",
+                T=[bool],
+            )
+            self.assertEqual(
+                envvar.option("FOO2", T=(str, None)),
+                "(True,)",
+            )
 
 
 class Test_option_scan(unittest.TestCase):

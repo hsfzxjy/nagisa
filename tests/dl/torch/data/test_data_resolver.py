@@ -227,7 +227,10 @@ class TestGetIdList(BaseTestCase):
         def id_list():
             return list(range(10))
 
-        self.assertEqual(self.DataResolver(None, None).get_id_list(), list(range(10)))
+        self.assertEqual(
+            self.DataResolver(None, None).get_id_list(),
+            list(range(10)),
+        )
 
     def test_basic_with_dep(self):
         @self.data_module.Resource.r
@@ -238,7 +241,10 @@ class TestGetIdList(BaseTestCase):
         def id_list(nums):
             return nums
 
-        self.assertEqual(self.DataResolver(None, 10).get_id_list(), list(range(10)))
+        self.assertEqual(
+            self.DataResolver(None, 10).get_id_list(),
+            list(range(10)),
+        )
 
     def test_bad_scope(self):
         @self.data_module.Resource.r

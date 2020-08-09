@@ -33,7 +33,10 @@ class TestLogging(ReloadModuleTestCase):
             return f.read()
 
     def test_logger_class(self):
-        self.assertIsInstance(self.logging.getLogger('nagisa'), self.contrib_logging._Logger)
+        self.assertIsInstance(
+            self.logging.getLogger('nagisa'),
+            self.contrib_logging._Logger,
+        )
 
     def test_log_to_file_txt_ext(self):
         self.contrib_logging.setup_logger(os.path.join(self.logdir, "test_log.txt"))
@@ -64,7 +67,8 @@ class TestLogging(ReloadModuleTestCase):
 
     def test_log_to_file_txt_ext_slave_worker(self):
         self.contrib_logging.setup_logger(
-            os.path.join(self.logdir, "test_log.txt"), distributed_rank=1
+            os.path.join(self.logdir, "test_log.txt"),
+            distributed_rank=1,
         )
         logger = self.logging.getLogger("nagisa.null")
         logger.info("test")
@@ -130,5 +134,6 @@ class TestLogging(ReloadModuleTestCase):
             self.log_every_one_second(logger)
 
         self.assertRegexpMatches(
-            self.get_content("log.txt"), re.compile(r'[^\n]*nagisa.null INFO: test\n', re.M)
+            self.get_content("log.txt"),
+            re.compile(r'[^\n]*nagisa.null INFO: test\n', re.M),
         )

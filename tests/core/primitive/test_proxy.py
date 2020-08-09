@@ -15,11 +15,15 @@ class TestProxy(unittest.TestCase):
         ]
 
         for case in cases:
-            self.assertIs(proxy(case), case)
+            with self.subTest(case=case):
+                self.assertIs(proxy(case), case)
 
     def test_proxy_list(self):
         lst = [42]
-        self.assertIsInstance(proxy(lst, T=[int]), SwitchableList)
+        self.assertIsInstance(
+            proxy(lst, T=[int]),
+            SwitchableList,
+        )
 
     def test_proxy_proxy(self):
         lst = proxy([42], T=[int])
@@ -28,7 +32,10 @@ class TestProxy(unittest.TestCase):
 
 class TestSwitchableList(unittest.TestCase):
     def test_subclass(self):
-        self.assertTrue(isinstance(proxy([42], T=[int]), list))
+        self.assertTrue(isinstance(
+            proxy([42], T=[int]),
+            list,
+        ))
 
     def test_host_none(self):
         lst = proxy([42], T=[int], mutable=False)
@@ -76,8 +83,8 @@ class TestImmutableList(unittest.TestCase):
         ]
 
         for stmt in cases:
-            with self.assertRaises(RuntimeError, msg=f'{stmt!r} should failed'):
-                exec(stmt)
+            with self.subTest(stmt=stmt):
+                self.assertRaises(RuntimeError, exec, stmt, {'lst': lst})
 
     def test_valid(self):
         import sys
@@ -107,12 +114,13 @@ class TestImmutableList(unittest.TestCase):
             ['lst.index(3)', 2],
         ]
         for expr, expected in cases:
-            if isinstance(expected, type) and issubclass(expected, Exception):
-                self.assertRaises(expected, eval, expr, msg=expr)
-            else:
-                result = eval(expr)
-                if expected is not ...:
-                    self.assertEqual(result, expected)
+            with self.subTest(expr=expr, expected=expected):
+                if isinstance(expected, type) and issubclass(expected, Exception):
+                    self.assertRaises(expected, eval, expr, msg=expr)
+                else:
+                    result = eval(expr)
+                    if expected is not ...:
+                        self.assertEqual(result, expected)
 
 
 class TestMutableList(unittest.TestCase):
@@ -133,9 +141,10 @@ class TestMutableList(unittest.TestCase):
         ]
 
         for stmt, expected in cases:
-            lst = proxy([2, 3, 1], T=[int], mutable=True)
-            exec(stmt)
-            self.assertEqual(lst, expected, msg=stmt)
+            with self.subTest(stmt=stmt, expected=expected):
+                lst = proxy([2, 3, 1], T=[int], mutable=True)
+                exec(stmt)
+                self.assertEqual(lst, expected)
 
     def test_bad_type(self):
         cases = [
@@ -147,9 +156,8 @@ class TestMutableList(unittest.TestCase):
 
         for stmt in cases:
             lst = proxy([2, 3, 1], T=[int], mutable=True)
-
-            with self.assertRaises(TypeError, msg=f'{stmt!r} should failed'):
-                exec(stmt)
+            with self.subTest(stmt=stmt):
+                self.assertRaises(TypeError, exec, stmt, {'lst': lst})
 
     def test_valid(self):
         import sys
@@ -179,9 +187,10 @@ class TestMutableList(unittest.TestCase):
             ['lst.index(3)', 2],
         ]
         for expr, expected in cases:
-            if isinstance(expected, type) and issubclass(expected, Exception):
-                self.assertRaises(expected, eval, expr, msg=expr)
-            else:
-                result = eval(expr)
-                if expected is not ...:
-                    self.assertEqual(result, expected)
+            with self.subTest(expr=expr, expected=expected):
+                if isinstance(expected, type) and issubclass(expected, Exception):
+                    self.assertRaises(expected, eval, expr, msg=expr)
+                else:
+                    result = eval(expr)
+                    if expected is not ...:
+                        self.assertEqual(result, expected)

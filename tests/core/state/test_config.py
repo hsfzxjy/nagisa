@@ -50,7 +50,7 @@ class Test_merge(unittest.TestCase):
         )
 
     def test_merge_from_args(self):
-        config = Config().merge_from_args(argparse.Namespace(foo4=[1]), ).freeze()
+        config = Config().merge_from_args(argparse.Namespace(foo4=[1])).freeze()
         self.assertEqual(
             config.value_dict(),
             {
@@ -63,7 +63,7 @@ class Test_merge(unittest.TestCase):
             },
         )
 
-        config = (Config().merge_from_args(argparse.Namespace(foo4=[1], foo2=36), ).freeze())
+        config = (Config().merge_from_args(argparse.Namespace(foo4=[1], foo2=36)).freeze())
         self.assertEqual(
             config.value_dict(),
             {
@@ -108,14 +108,8 @@ class TestSingleton(ReloadModuleTestCase):
         '^nagisa.core.state.config',
     ]
     attach = [
-        ['config_module', '^nagisa.core.state.config'],
+        ['config_module', 'nagisa.core.state.config'],
     ]
-
-    def setUp(self):
-        import sys, importlib
-
-        sys.modules.pop("nagisa.core.state.config", None)
-        self.config_module = importlib.import_module("nagisa.core.state.config")
 
     def test_singleton(self):
         @self.config_module.ConfigNode.from_class(singleton=True)
@@ -123,7 +117,10 @@ class TestSingleton(ReloadModuleTestCase):
             pass
 
         cfg = Config()
-        self.assertIs(cfg, self.config_module.ConfigNode.instance())
+        self.assertIs(
+            cfg,
+            self.config_module.ConfigNode.instance(),
+        )
 
     def test_singleton_fail(self):
         @self.config_module.ConfigNode.from_class(singleton=True)

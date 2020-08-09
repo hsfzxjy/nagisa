@@ -18,7 +18,16 @@ class TestTransformClass(BaseTestCase):
             def _t_num_(self, n, _):
                 return n ** 2
 
-        self.assertEqual(Square()({"num": 10, "x": 10}), {"num": 100, "x": 10})
+        self.assertEqual(
+            Square()({
+                "num": 10,
+                "x": 10
+            }),
+            {
+                "num": 100,
+                "x": 10,
+            },
+        )
 
     def test_default(self):
         class Square(self.data_module.BaseTransform):
@@ -28,7 +37,16 @@ class TestTransformClass(BaseTestCase):
                 else:
                     return -1
 
-        self.assertEqual(Square()({"num": 10, "x": 10}), {"num": 100, "x": -1})
+        self.assertEqual(
+            Square()({
+                "num": 10,
+                "x": 10
+            }),
+            {
+                "num": 100,
+                "x": -1,
+            },
+        )
 
     def test_kwargs(self):
         class Pow(self.data_module.BaseTransform):
@@ -38,8 +56,22 @@ class TestTransformClass(BaseTestCase):
             def _t_num_(self, n, *_):
                 return n ** self.kwargs.pow
 
-        self.assertEqual(Pow()({"num": 10}), {"num": 100})
-        self.assertEqual(Pow(pow=3)({"num": 10}), {"num": 1000})
+        self.assertEqual(
+            Pow()({
+                "num": 10
+            }),
+            {
+                "num": 100,
+            },
+        )
+        self.assertEqual(
+            Pow(pow=3)({
+                "num": 10
+            }),
+            {
+                "num": 1000,
+            },
+        )
 
     def test_check_kwargs(self):
         class Pow(self.data_module.BaseTransform):
@@ -52,7 +84,14 @@ class TestTransformClass(BaseTestCase):
             def _t_num_(self, n, *_):
                 return n ** self.kwargs.pow
 
-        self.assertEqual(Pow(pow=-10)({"num": 10}), {"num": 0.01})
+        self.assertEqual(
+            Pow(pow=-10)({
+                "num": 10
+            }),
+            {
+                "num": 0.01,
+            },
+        )
 
     def test_use_me(self):
         class Sqrt(self.data_module.BaseTransform):
@@ -62,8 +101,22 @@ class TestTransformClass(BaseTestCase):
             def _t_num_(self, n, *_):
                 return n ** 0.5
 
-        self.assertEqual(Sqrt()({"num": -1}), {"num": -1})
-        self.assertEqual(Sqrt()({"num": 4}), {"num": 2})
+        self.assertEqual(
+            Sqrt()({
+                "num": -1
+            }),
+            {
+                "num": -1,
+            },
+        )
+        self.assertEqual(
+            Sqrt()({
+                "num": 4
+            }),
+            {
+                "num": 2,
+            },
+        )
 
     def test_given_cfg(self):
         class Pow(self.data_module.BaseTransform):
@@ -73,7 +126,14 @@ class TestTransformClass(BaseTestCase):
         class _MockCfg:
             pow = 2
 
-        self.assertEqual(Pow(cfg=_MockCfg)({"num": 10}), {"num": 100})
+        self.assertEqual(
+            Pow(cfg=_MockCfg)({
+                "num": 10
+            }),
+            {
+                "num": 100,
+            },
+        )
 
     def test_global_cfg(self):
         class Pow(self.data_module.BaseTransform):
@@ -108,11 +168,15 @@ class TestApply(BaseTestCase):
         self.data_module.trans_seq.set(lambda cfg, meta: _seq)
 
         _seq = ["sqrt", "square"]
-        result = self.data_module.apply_transform(None, None, {"num": -10})
+        result = self.data_module.apply_transform(None, None, {
+            "num": -10,
+        })
         self.assertEqual(result, {"num": 100})
 
         _seq = ["square", "sqrt"]
-        result = self.data_module.apply_transform(None, None, {"num": -10})
+        result = self.data_module.apply_transform(None, None, {
+            "num": -10,
+        })
         self.assertEqual(result, {"num": 10})
 
     def test_init_with_custom_key(self):
@@ -122,7 +186,9 @@ class TestApply(BaseTestCase):
 
         self.data_module.trans_seq.set(["sqr"])
 
-        result = self.data_module.apply_transform(None, None, {"num": -10})
+        result = self.data_module.apply_transform(None, None, {
+            "num": -10,
+        })
         self.assertEqual(result, {"num": 100})
 
     def test_kwargs_mapping(self):
@@ -148,8 +214,17 @@ class TestApply(BaseTestCase):
 
         cfg = Config().freeze()
 
-        cfg.data.trans_kwargs = {"pow": {"pow": 4}, "root": {"pow": 2}}
-        result = self.data_module.apply_transform(None, None, {"num": -10})
+        cfg.data.trans_kwargs = {
+            "pow": {
+                "pow": 4
+            },
+            "root": {
+                "pow": 2,
+            },
+        }
+        result = self.data_module.apply_transform(None, None, {
+            "num": -10,
+        })
         self.assertEqual(result, {"num": 100})
 
     def test_kwargs_mapping_static(self):
@@ -162,7 +237,14 @@ class TestApply(BaseTestCase):
                 return n ** (1 / self.kwargs.pow)
 
         self.data_module.trans_seq.set(["pow", "root"])
-        self.data_module.trans_kwargs.set({"pow": {"pow": 4}, "root": {"pow": 2}})
+        self.data_module.trans_kwargs.set({
+            "pow": {
+                "pow": 4
+            },
+            "root": {
+                "pow": 2
+            },
+        })
 
         result = self.data_module.apply_transform(None, None, {"num": -10})
         self.assertEqual(result, {"num": 100})
@@ -177,7 +259,14 @@ class TestApply(BaseTestCase):
                 return n ** (1 / self.kwargs.pow)
 
         self.data_module.trans_seq.set(["pow", "root"])
-        self.data_module.trans_kwargs.set({"pow": {"pow": 4}, "root": {"pow": 2}})
+        self.data_module.trans_kwargs.set({
+            "pow": {
+                "pow": 4
+            },
+            "root": {
+                "pow": 2
+            },
+        })
 
         result = self.data_module.apply_transform(None, None, {"num": -10})
         self.assertEqual(result, {"num": 100})

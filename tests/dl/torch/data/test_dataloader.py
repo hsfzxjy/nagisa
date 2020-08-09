@@ -85,4 +85,7 @@ class TestDataLoader(BaseDatasetTestCase):
                 "item3": items,
             })
 
-        self.assertListEqual(list(self.dataset.as_loader(batch_size=4)), expected)
+        self.assertListEqual(
+            list(self.dataset.as_loader(batch_size=4)),
+            expected,
+        )
