@@ -97,6 +97,9 @@ def init_process(rank, size, backend, Q, done_events, exit_event, main, args):
 
 
 def mp_call(main, *, size=4, backend='gloo', args=()):
+    if os.getenv('NO_MP') is not None:
+        raise unittest.SkipTest("envvar `NO_MP` set")
+
     mp_ctx = torch_mp.get_context('spawn')
     Q = mp_ctx.SimpleQueue()
 
