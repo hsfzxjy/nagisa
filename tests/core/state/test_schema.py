@@ -5,6 +5,14 @@ from nagisa.core.misc.testing import ReloadModuleTestCase
 
 
 class TestInit(unittest.TestCase):
+    def test_init_with_bad_attrs(self):
+        self.assertRaisesRegex(
+            ValueError,
+            r"^Cannot parse attrs \['bad_attr'\]$",
+            schema.SchemaNode,
+            attrs='bad_attr'
+        )
+
     def test_init_empty(self):
         self.assertTrue(schema.SchemaNode()._meta_.is_container)
 

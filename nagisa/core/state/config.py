@@ -10,17 +10,19 @@ class ConfigNode(SchemaNode):
     __instance__ = None
 
     @classmethod
-    def _parse_attrs_(cls, ns, attrs):
-        env_name = None
-        arg_name = None
-        for attr in attrs:
-            if attr.startswith("env:"):
-                env_name = attr.replace("env:", "")
-            elif attr.startswith("arg:"):
-                arg_name = attr.replace("arg:", "")
+    def _init_attrs_(cls, ns):
+        ns.env = ns.arg = None
 
-        ns.env = env_name
-        ns.arg = arg_name
+    @classmethod
+    def _parse_attr_(cls, ns, attr):
+        if attr.startswith("env:"):
+            ns.env = attr.replace("env:", "")
+        elif attr.startswith("arg:"):
+            ns.arg = attr.replace("arg:", "")
+        else:
+            return False
+
+        return True
 
     def merge_from_args(self, ns):
         directives = []

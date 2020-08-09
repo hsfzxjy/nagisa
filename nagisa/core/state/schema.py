@@ -238,12 +238,26 @@ class SchemaNode:
             attrs = attrs.split()
 
         ns.writable = False
-        for attr_item in attrs:
-            if attr_item.lower() in ("w", "writable"):
+        cls._init_attrs_(ns)
+        bad_attrs = []
+        for attr in attrs:
+            if attr.lower() in ("w", "writable"):
                 ns.writable = True
+            elif not cls._parse_attr_(ns, attr):
+                bad_attrs.append(attr)
 
-        cls._parse_attrs_(ns, attrs)
+        if bad_attrs:
+            raise ValueError(f"Cannot parse attrs {bad_attrs!r}")
+
         return ns
+
+    @classmethod
+    def _init_attrs_(cls, ns):
+        pass
+
+    @classmethod
+    def _parse_attr_(cls, ns, attr):
+        return False
 
     def _walk_(self, path, func, *, visit_container=False):
         if not self._meta_.is_container:
@@ -255,10 +269,6 @@ class SchemaNode:
 
         for key, entry in self._entries_.items():
             entry._walk_(path + (key, ), func, visit_container=visit_container)
-
-    @classmethod
-    def _parse_attrs_(cls, ns, attrs):
-        pass
 
     def _update_value_(self, obj, *, entry_name=None, action="update"):
         assert action in ("update", "merge")
