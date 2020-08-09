@@ -12,11 +12,11 @@ from nagisa.core.misc.serialization import load_yaml_with_base, dump_yaml
 
 class NodeMeta:
 
-    __slots__ = ["attributes", "type", "is_container"]
+    __slots__ = ["attrs", "type", "is_container"]
 
-    def __init__(self, type_=None, attributes=None, is_container=False):
-        self.type = type_
-        self.attributes = attributes
+    def __init__(self, T=None, attrs=None, is_container=False):
+        self.type = T
+        self.attrs = attrs
         self.is_container = is_container
 
     def __eq__(self, other):
@@ -43,7 +43,7 @@ class SchemaNode:
     ]
 
     @classmethod
-    def new_from_primitive(cls, value: Any, parent=None, attributes=None):
+    def new_from_primitive(cls, value: Any, parent=None, attrs=None):
 
         if isinstance(value, cls):
             if parent is not None:
@@ -51,14 +51,14 @@ class SchemaNode:
             return value
 
         if isinstance(value, dict):
-            result = cls(attributes=attributes, parent=parent)
+            result = cls(attrs=attrs, parent=parent)
             for k, v in value.items():
                 result.entry(
                     k,
-                    cls.new_from_primitive(value=v, parent=result, attributes=attributes),
+                    cls.new_from_primitive(value=v, parent=result, attrs=attrs),
                 )
         else:
-            result = cls(default=value, parent=parent, attributes=attributes)
+            result = cls(default=value, parent=parent, attrs=attrs)
 
         return result
 
@@ -95,18 +95,18 @@ class SchemaNode:
         return result
 
     @staticmethod
-    def _infer_(type_, value):
-        assert value is not None or type_ is not None, \
-            "At least one of `type_` or `default` should be provided"
+    def _infer_(T, value):
+        assert value is not None or T is not None, \
+            "At least one of `T` or `default` should be provided"
 
         if value is None:
-            final_type = type_
-        elif type_ is None:
+            final_type = T
+        elif T is None:
             final_type = typing.inferT(value)
         else:
-            assert typing.checkT(value, type_), \
-                f"Value {value!r} is incompatible with type {type_!r}"
-            final_type = type_
+            assert typing.checkT(value, T), \
+                f"Value {value!r} is incompatible with type {T!r}"
+            final_type = T
 
         typing.is_acceptableT(final_type, raise_exc=True)
         if value is None:
@@ -118,14 +118,14 @@ class SchemaNode:
         self,
         parent=None,
         default=None,
-        type_=None,
-        attributes=None,
+        T=None,
+        attrs=None,
         meta=None,
     ):
-        is_container = default is None and type_ is None
+        is_container = default is None and T is None
         if not is_container:
             if meta is None:
-                final_type, default = self._infer_(type_, default)
+                final_type, default = self._infer_(T, default)
             else:
                 final_type = meta.type
             self._value_ = proxy(
@@ -140,10 +140,8 @@ class SchemaNode:
             final_type = None
 
         if meta is None:
-            attributes = self.__class__.__parse_attributes__(attributes)
-            self._meta_ = NodeMeta(
-                type_=final_type, attributes=attributes, is_container=is_container
-            )
+            attrs = self.__class__.__parse_attrs__(attrs)
+            self._meta_ = NodeMeta(T=final_type, attrs=attrs, is_container=is_container)
         else:
             self._meta_ = meta
         self._parent_ = weakref.ref(parent) if parent is not None else None
@@ -220,31 +218,31 @@ class SchemaNode:
                 visited.append(ptr)
             self._alias_entries_[name] = ptr
 
-    def _add_entry_(self, name, value, attributes=None):
+    def _add_entry_(self, name, value, attrs=None):
 
         if name in dir(self):
             raise RuntimeError(f'Cannot use preserved name {name!r} as entry.')
 
-        node = self.new_from_primitive(value, parent=self, attributes=attributes)
+        node = self.new_from_primitive(value, parent=self, attrs=attrs)
         self._entries_[name] = node
         return node
 
     @classmethod
-    def __parse_attributes__(cls, attributes):
+    def __parse_attrs__(cls, attrs):
         ns = _AttributeSlots()
 
-        if attributes is None:
-            attributes = []
+        if attrs is None:
+            attrs = []
 
-        if isinstance(attributes, str):
-            attributes = attributes.split()
+        if isinstance(attrs, str):
+            attrs = attrs.split()
 
         ns.writable = False
-        for attr_item in attributes:
+        for attr_item in attrs:
             if attr_item.lower() in ("w", "writable"):
                 ns.writable = True
 
-        cls._parse_attributes_(ns, attributes)
+        cls._parse_attrs_(ns, attrs)
         return ns
 
     def _walk_(self, path, func, *, visit_container=False):
@@ -259,7 +257,7 @@ class SchemaNode:
             entry._walk_(path + (key, ), func, visit_container=visit_container)
 
     @classmethod
-    def _parse_attributes_(cls, ns, attributes):
+    def _parse_attrs_(cls, ns, attrs):
         pass
 
     def _update_value_(self, obj, *, entry_name=None, action="update"):
@@ -271,7 +269,7 @@ class SchemaNode:
             assert self._meta_.is_container
 
             if entry_name not in self._entries_:
-                if not self._meta_.attributes.writable:
+                if not self._meta_.attrs.writable:
                     raise AttributeError(
                         f"Entry {entry_name!r} not found on container {self.dotted_path()!r}"
                     )
@@ -282,7 +280,7 @@ class SchemaNode:
             else:
                 host = self._entries_[entry_name]
 
-        if self._frozen_ and not host._meta_.attributes.writable:
+        if self._frozen_ and not host._meta_.attrs.writable:
             raise AttributeError(f"Cannot update read-only entry {host.dotted_path()!r}")
 
         if host._meta_.is_container:
@@ -293,14 +291,14 @@ class SchemaNode:
                 )
 
             extra_entries = set(obj) - set(host._entries_)
-            if not host._meta_.attributes.writable and extra_entries:
+            if not host._meta_.attrs.writable and extra_entries:
                 verbose_extra_entries = ", ".join(map("{!r}".format, extra_entries))
                 raise AttributeError(
                     f"Adding extra entries {verbose_extra_entries} to "
                     f"read-only container {host.dotted_path()!r} is forbidden"
                 )
 
-            if host._meta_.attributes.writable and action == "update":
+            if host._meta_.attrs.writable and action == "update":
                 host._entries_.clear()
                 host._alias_entries_.clear()
 
@@ -308,7 +306,7 @@ class SchemaNode:
                 if name in host._entries_:
                     host._entries_[name]._update_value_(value, action=action)
                 else:
-                    entry = host._add_entry_(name, value, attributes="writable")
+                    entry = host._add_entry_(name, value, attrs="writable")
                     if host._frozen_:
                         entry.freeze()
         else:
@@ -327,7 +325,7 @@ class SchemaNode:
 
     @property
     def _mutable_(self):
-        return not self._frozen_ or self._meta_.attributes.writable
+        return not self._frozen_ or self._meta_.attrs.writable
 
     def equal(self, other, *, strict=False):
         assert isinstance(other, self.__class__)
@@ -342,7 +340,7 @@ class SchemaNode:
                 and node._frozen_ == other_node._frozen_
             )
             if strict:
-                ret = ret and node._meta_.attributes == other_node._meta_.attributes
+                ret = ret and node._meta_.attrs == other_node._meta_.attrs
             if not ret:
                 return False
 
@@ -384,17 +382,19 @@ class SchemaNode:
     def has_entry(self, name):
         return name in set(self._entries_) | set(self._alias_entries_)
 
-    def entry(self, name, node):
+    def entry(self, name, value=None, T=None, attrs=None):
         assert name not in self._entries_, f"Entry name {name!r} already exists"
 
-        self._add_entry_(name, node)
+        if not isinstance(value, self.__class__):
+            value = self.__class__(default=value, T=T, attrs=attrs)
+        self._add_entry_(name, value)
         return self
 
     def freeze(self):
         if not self._meta_.is_container:
             self._frozen_ = True
             if hasattr(self._value_, "mutable"):
-                self._value_.mutable(self._meta_.attributes.writable)
+                self._value_.mutable(self._meta_.attrs.writable)
             return self
 
         if self._frozen_:
@@ -542,10 +542,10 @@ class _SchemeBuilder:
         alias_entries = {}
 
         if getattr(template, "__writable__", False):
-            attributes = ["writable"]
+            attrs = ["writable"]
         else:
-            attributes = []
-        node = schema_class(attributes=attributes)
+            attrs = []
+        node = schema_class(attrs=attrs)
 
         for name, default in self._get_entryname_default_pairs_(template):
             if inspect.isclass(default):
@@ -555,13 +555,13 @@ class _SchemeBuilder:
             entries[name]["default"] = default
 
         for name, annotation in getattr(template, "__annotations__", {}).items():
-            T, attributes, alias = self._parse_annotation_(annotation)
+            T, attrs, alias = self._parse_annotation_(annotation)
 
             if alias is not None:
                 alias_entries[name] = alias
             else:
-                entries[name]["type_"] = T
-                entries[name]["attributes"] = attributes
+                entries[name]["T"] = T
+                entries[name]["attrs"] = attrs
 
         for name, kwargs in entries.items():
             child_node = (
@@ -592,8 +592,8 @@ class _SchemeBuilder:
         T = None
         if typing.is_acceptableT(annotations[0]):
             T = annotations[0]
-            attributes = annotations[1:]
+            attrs = annotations[1:]
         else:
-            attributes = annotations[:]
+            attrs = annotations[:]
 
-        return T, attributes, None
+        return T, attrs, None

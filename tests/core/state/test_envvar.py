@@ -66,7 +66,7 @@ class Test_option(unittest.TestCase):
         from nagisa.core.state.schema import SchemaNode
 
         envvar._registry.unsync()
-        schema_node = SchemaNode(attributes=["w"]).freeze()
+        schema_node = SchemaNode(attrs=["w"]).freeze()
         envvar._registry.sync_with(schema_node)
 
         with mock_env("FOO1", "['bar']"):
@@ -97,7 +97,7 @@ class Test_option_scan(unittest.TestCase):
         from nagisa.core.state.schema import SchemaNode
 
         envvar._registry.unsync()
-        self.schema_node = SchemaNode(attributes=["w"])
+        self.schema_node = SchemaNode(attrs=["w"])
         envvar._registry.sync_with(self.schema_node)
 
     def test_scan(self):

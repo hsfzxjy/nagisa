@@ -10,10 +10,10 @@ class ConfigNode(SchemaNode):
     __instance__ = None
 
     @classmethod
-    def _parse_attributes_(cls, ns, attributes):
+    def _parse_attrs_(cls, ns, attrs):
         env_name = None
         arg_name = None
-        for attr in attributes:
+        for attr in attrs:
             if attr.startswith("env:"):
                 env_name = attr.replace("env:", "")
             elif attr.startswith("arg:"):
@@ -26,7 +26,7 @@ class ConfigNode(SchemaNode):
         directives = []
 
         def _visitor(path, entry):
-            arg_name = entry._meta_.attributes.arg
+            arg_name = entry._meta_.attrs.arg
             if arg_name is None or not hasattr(ns, arg_name):
                 return
             directives.append((".".join(path), getattr(ns, arg_name)))
@@ -40,11 +40,11 @@ class ConfigNode(SchemaNode):
         directives = []
 
         def _visitor(path, entry):
-            env_name = entry._meta_.attributes.env
+            env_name = entry._meta_.attrs.env
             if env_name is None or env_name not in envvar.os.environ:
                 return
             directive = ".".join(path)
-            value = envvar.object_from_envvar(entry._meta_.attributes.env, entry._meta_.type)
+            value = envvar.object_from_envvar(entry._meta_.attrs.env, entry._meta_.type)
             directives.append((directive, value))
 
         self._walk_((), _visitor)
@@ -69,7 +69,7 @@ class ConfigNode(SchemaNode):
         return self
 
     def track_envvar(self, dirname=".", func_names=()):
-        self.entry("ENVVAR", self.__class__(attributes=["w"]))
+        self.entry("ENVVAR", self.__class__(attrs=["w"]))
         envvar._registry.sync_with(self.ENVVAR)
         envvar._registry.scan(dirname, caller_level=-2, func_names=func_names)
         return self

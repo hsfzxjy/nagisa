@@ -100,7 +100,7 @@ class _EnvvarRegistry:
                 env_value = object_from_envvar(name, T, default=None)
                 self._store_.entry(
                     name,
-                    self._store_.__class__(type_=(T, None), default=env_value),
+                    self._store_.__class__(T=(T, None), default=env_value),
                 )
 
 

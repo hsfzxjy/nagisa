@@ -22,7 +22,7 @@ class TestInit(unittest.TestCase):
 
         for value, T in cases:
             with self.subTest(value=value, T=T):
-                x = schema.SchemaNode(type_=T)
+                x = schema.SchemaNode(T=T)
                 self.assertEqual(x._value_, value)
 
     def test_init_with_default(self):
@@ -58,7 +58,7 @@ class TestInit(unittest.TestCase):
         ]
         for value, T in cases:
             with self.subTest(value=value, T=T):
-                x = schema.SchemaNode(default=value, type_=T)
+                x = schema.SchemaNode(default=value, T=T)
                 self.assertEqual(x._meta_.type, T)
 
         cases = [
@@ -69,7 +69,7 @@ class TestInit(unittest.TestCase):
         ]
         for value, T in cases:
             with self.subTest(value=value, T=T):
-                schema.SchemaNode(default=value, type_=T)
+                schema.SchemaNode(default=value, T=T)
 
     def test_init_with_default_and_type_fail(self):
         cases = [
@@ -82,14 +82,14 @@ class TestInit(unittest.TestCase):
         ]
         for value, T in cases:
             with self.subTest(value=value, T=T):
-                self.assertRaises(AssertionError, schema.SchemaNode, default=value, type_=T)
+                self.assertRaises(AssertionError, schema.SchemaNode, default=value, T=T)
 
         cases = [
             [(1, ), [str]],
         ]
         for value, T in cases:
             with self.subTest(value=value, T=T):
-                self.assertRaises(AssertionError, schema.SchemaNode, default=value, type_=T)
+                self.assertRaises(AssertionError, schema.SchemaNode, default=value, T=T)
 
 
 class TestAddEntry(unittest.TestCase):
@@ -220,7 +220,7 @@ class TestSetAttr(unittest.TestCase):
             "foo",
             schema.SchemaNode(
                 default=1,
-                attributes="writable",
+                attrs="writable",
             ),
         ).freeze()
 
@@ -229,10 +229,8 @@ class TestSetAttr(unittest.TestCase):
 
         x = schema.SchemaNode().entry(
             "foo",
-            schema.SchemaNode(
-                default=(1, ),
-                attributes="writable",
-            ),
+            (1, ),
+            attrs="writable",
         ).freeze()
 
         x.foo += (2, )
@@ -244,22 +242,21 @@ class TestSetAttr(unittest.TestCase):
         with self.assertRaises(TypeError):
             schema.SchemaNode().entry(
                 "foo",
-                schema.SchemaNode(default=(1, ), attributes="writable"),
+                (1, ),
+                attrs="writable",
             ).freeze().foo = ["1"]
 
         with self.assertRaises(TypeError):
             schema.SchemaNode().entry(
                 "foo",
-                schema.SchemaNode(
-                    default=1,
-                    attributes="writable",
-                ),
+                1,
+                attrs="writable",
             ).freeze().foo = 1.0
 
     def test_set_attr_free_container(self):
         x = schema.SchemaNode().entry(
             "foo",
-            schema.SchemaNode(attributes="writable"),
+            attrs="writable",
         ).freeze()
 
         x.foo.bar = 1
@@ -277,7 +274,7 @@ class TestSetAttr(unittest.TestCase):
     def test_set_attr_free_container_fail(self):
         x = schema.SchemaNode().entry(
             "foo",
-            schema.SchemaNode(attributes="writable"),
+            attrs="writable",
         ).freeze()
 
         x.foo.bar = 1
@@ -290,7 +287,7 @@ class TestSetAttr(unittest.TestCase):
     def test_set_attr_free_container_dict(self):
         x = schema.SchemaNode().entry(
             "foo",
-            schema.SchemaNode(attributes="w"),
+            attrs="w",
         ).freeze()
 
         x.foo = {"bar": 1}
@@ -320,10 +317,7 @@ class TestSetAttr(unittest.TestCase):
         )
 
     def test_set_attr_container_dict_fail(self):
-        x = schema.SchemaNode().entry(
-            "foo",
-            schema.SchemaNode(),
-        ).freeze()
+        x = schema.SchemaNode().entry("foo").freeze()
 
         with self.assertRaises(AttributeError) as cm:
             x.foo = {"bar": 1}
