@@ -3,7 +3,7 @@ import ast
 import typing
 import logging
 
-from nagisa.core.state.scheme import SchemeNode
+from nagisa.core.state.schema import SchemaNode
 from nagisa.core.primitive import typing
 from nagisa.core.primitive import ast as prim_ast
 from nagisa.core.misc.io import resolve_until_exists
@@ -66,11 +66,11 @@ class _EnvvarRegistry:
     def unsync(self):
         self._store_ = None
 
-    def sync_with(self, scheme_node: SchemeNode):
+    def sync_with(self, schema_node: SchemaNode):
         if self._store_ is not None:
             raise RuntimeError("Cannot call `sync_with()` more than once.")
 
-        self._store_ = scheme_node
+        self._store_ = schema_node
 
     def scan(self, dirname=".", func_names=__acceptable_func_names__, caller_level=-1):
 

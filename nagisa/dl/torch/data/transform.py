@@ -1,6 +1,6 @@
 from nagisa.core.misc.cache import Cache
 from nagisa.core.misc.naming import camel_to_snake
-from nagisa.core.state.scheme import SchemeNode
+from nagisa.core.state.schema import SchemaNode
 from nagisa.core.state.config import ConfigValue, ConfigNode, cfg_property
 
 from ._registries import Transform
@@ -25,8 +25,8 @@ trans_kwargs = ConfigValue(
 
 
 class BaseTransform:
-    @SchemeNode.writable
-    class _kwargs_scheme_:
+    @SchemaNode.writable
+    class _kwargs_schema_:
         pass
 
     def __init_subclass__(cls, key=None):
@@ -38,9 +38,9 @@ class BaseTransform:
     def __init__(self, *, cfg=None, meta=None, **kwargs):
         self._cfg_ = cfg
         self.meta = meta
-        kwargs = SchemeNode.from_class(self._kwargs_scheme_, )().merge_from_dict(kwargs)
+        kwargs = SchemaNode.from_class(self._kwargs_schema_, )().merge_from_dict(kwargs)
         self._check_kwargs_(kwargs)
-        self.kwargs = kwargs.finalize()
+        self.kwargs = kwargs.freeze()
 
     def _check_kwargs_(self, kwargs):
         pass

@@ -25,14 +25,14 @@ class _AttributeSlots:
     pass
 
 
-class SchemeNode:
+class SchemaNode:
 
     __slots__ = [
         "_meta_",
         "_value_",
         "_alias_entries_",
         "_entries_",
-        "_finalized_",
+        "_frozen_",
         "_parent_",
         "__weakref__",
     ]
@@ -67,10 +67,10 @@ class SchemeNode:
                 alias_dict[path] = node._alias_entries_
 
         self._walk_((), _visitor, visit_container=True)
-        return (self._reconstruct_, (self.value_dict(), meta_dict, alias_dict, self._finalized_))
+        return (self._reconstruct_, (self.value_dict(), meta_dict, alias_dict, self._frozen_))
 
     @classmethod
-    def _reconstruct_(cls, value_dict, meta_dict, alias_dict, finalized):
+    def _reconstruct_(cls, value_dict, meta_dict, alias_dict, frozen):
         def _build(value, path, parent):
             meta = meta_dict[path]
             if isinstance(value, dict):
@@ -83,8 +83,8 @@ class SchemeNode:
             return result
 
         result = _build(value_dict, (), None)
-        if finalized:
-            result.finalize()
+        if frozen:
+            result.freeze()
 
         return result
 
@@ -142,7 +142,7 @@ class SchemeNode:
             self._meta_ = meta
         self._parent_ = weakref.ref(parent) if parent is not None else None
 
-        self._finalized_ = False
+        self._frozen_ = False
 
     def __getattr__(self, name):
         if name == "__dict__":
@@ -164,7 +164,7 @@ class SchemeNode:
 
     def __setattr__(self, name, value):
 
-        if any(name.endswith(x) for x in SchemeNode.__slots__):
+        if any(name.endswith(x) for x in SchemaNode.__slots__):
             object.__setattr__(self, name, value)
             return
 
@@ -180,10 +180,10 @@ class SchemeNode:
     def __str__(self):
         return self.to_str(level=0)
 
-    def _check_finalized_(self, action: str, value: bool):
-        if self._finalized_ != value:
+    def _check_frozen_(self, action: str, value: bool):
+        if self._frozen_ != value:
             prep = "before" if value else "after"
-            raise RuntimeError(f"Cannot {action} {prep} the object is finalized")
+            raise RuntimeError(f"Cannot {action} {prep} the object is frozen")
 
     def _check_is_container_(self, action: str, value: bool):
         if self._meta_.is_container != value:
@@ -276,7 +276,7 @@ class SchemeNode:
             else:
                 host = self._entries_[entry_name]
 
-        if self._finalized_ and not host._meta_.attributes.writable:
+        if self._frozen_ and not host._meta_.attributes.writable:
             raise AttributeError(f"Cannot update read-only entry {host.dotted_path()!r}")
 
         if host._meta_.is_container:
@@ -303,8 +303,8 @@ class SchemeNode:
                     host._entries_[name]._update_value_(value, action=action)
                 else:
                     entry = host._add_entry_(name, value, attributes="writable")
-                    if host._finalized_:
-                        entry.finalize()
+                    if host._frozen_:
+                        entry.freeze()
         else:
             if not typing.checkT(obj, host._meta_.type):
                 raise TypeError(
@@ -347,25 +347,25 @@ class SchemeNode:
         self._add_entry_(name, node)
         return self
 
-    def finalize(self):
+    def freeze(self):
         if not self._meta_.is_container:
-            self._finalized_ = True
+            self._frozen_ = True
             if hasattr(self._value_, "mutable"):
                 self._value_.mutable(self._meta_.attributes.writable)
             return self
 
-        if self._finalized_:
+        if self._frozen_:
             return self
 
         self._check_alias_()
-        self._finalized_ = True
+        self._frozen_ = True
         for entry in self._entries_.values():
-            entry.finalize()
+            entry.freeze()
 
         return self
 
     def alias(self, name: str, target: str):
-        self._check_finalized_("create alias", False)
+        self._check_frozen_("create alias", False)
         self._check_is_container_("create alias", True)
 
         assert name.isidentifier(), \
@@ -438,10 +438,10 @@ class SchemeNode:
         return self
 
     def _merge_from_directives_(self, directives, *, ext_syntax=True):
-        def _attrsetter(obj: SchemeNode, key, value):
+        def _attrsetter(obj: SchemaNode, key, value):
             obj._entries_[key]._update_value_(value)
 
-        def _attrchecker(obj: SchemeNode, key):
+        def _attrchecker(obj: SchemaNode, key):
             return key in obj._entries_
 
         for directive, value in directives:
@@ -472,29 +472,29 @@ class SchemeNode:
 
 
 class _SchemeBuilder:
-    __slots__ = ("scheme_class", "template", "singleton", "__instance__")
+    __slots__ = ("schema_class", "template", "singleton", "__instance__")
 
-    def __init__(self, scheme_class, template, singleton=False):
-        self.scheme_class = scheme_class
+    def __init__(self, schema_class, template, singleton=False):
+        self.schema_class = schema_class
         self.template = template
         self.singleton = singleton
         self.__instance__ = None
 
     def __repr__(self):
-        return f"<{self.scheme_class.__name__} Builder>"
+        return f"<{self.schema_class.__name__} Builder>"
 
     def __call__(self):
         if self.singleton:
             if self.__instance__ is None:
-                self.__instance__ = self._parse_(self.scheme_class, self.template)
-                self.scheme_class._handle_singleton_(self.__instance__)
+                self.__instance__ = self._parse_(self.schema_class, self.template)
+                self.schema_class._handle_singleton_(self.__instance__)
             return self.__instance__
-        return self._parse_(self.scheme_class, self.template)
+        return self._parse_(self.schema_class, self.template)
 
-    def _parse_(self, scheme_class, template):
-        return self._build_(scheme_class, template)
+    def _parse_(self, schema_class, template):
+        return self._build_(schema_class, template)
 
-    def _build_(self, scheme_class, template):
+    def _build_(self, schema_class, template):
         entries = collections.defaultdict(dict)
         alias_entries = {}
 
@@ -502,11 +502,11 @@ class _SchemeBuilder:
             attributes = ["writable"]
         else:
             attributes = []
-        node = scheme_class(is_container=True, attributes=attributes)
+        node = schema_class(is_container=True, attributes=attributes)
 
         for name, default in self._get_entryname_default_pairs_(template):
             if inspect.isclass(default):
-                default = self._build_(scheme_class, default)
+                default = self._build_(schema_class, default)
                 entries[name]["is_container"] = True
 
             entries[name]["default"] = default
@@ -522,7 +522,7 @@ class _SchemeBuilder:
 
         for name, kwargs in entries.items():
             child_node = (
-                kwargs["default"] if kwargs.get("is_container") else scheme_class(**kwargs)
+                kwargs["default"] if kwargs.get("is_container") else schema_class(**kwargs)
             )
             node.entry(name, child_node)
         for name, alias in alias_entries.items():

@@ -34,7 +34,7 @@ class TestTransformClass(BaseTestCase):
 
     def test_kwargs(self):
         class Pow(self.s.BaseTransform):
-            class _kwargs_scheme_:
+            class _kwargs_schema_:
                 pow: int = 2
 
             def _t_num_(self, n, *_):
@@ -45,7 +45,7 @@ class TestTransformClass(BaseTestCase):
 
     def test_check_kwargs(self):
         class Pow(self.s.BaseTransform):
-            class _kwargs_scheme_:
+            class _kwargs_schema_:
                 pow: int = 2
 
             def _check_kwargs_(self, kwargs):
@@ -148,7 +148,7 @@ class TestApply(BaseTestCase):
                 class trans_kwargs:
                     pass
 
-        cfg = Config().finalize()
+        cfg = Config().freeze()
 
         cfg.data.trans_kwargs = {"pow": {"pow": 4}, "root": {"pow": 2}}
         result = self.s.apply_transform(None, None, {"num": -10})

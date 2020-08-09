@@ -1,12 +1,12 @@
 import os
 import unittest
-from nagisa.core.state import scheme
+from nagisa.core.state import schema
 from nagisa.core.misc.testing import ReloadModuleTestCase
 
 
 class TestInit(unittest.TestCase):
     def test_init_empty(self):
-        self.assertRaises(AssertionError, scheme.SchemeNode)
+        self.assertRaises(AssertionError, schema.SchemaNode)
 
     def test_init_with_type(self):
         cases = [
@@ -21,7 +21,7 @@ class TestInit(unittest.TestCase):
         ]
 
         for value, T in cases:
-            x = scheme.SchemeNode(type_=T)
+            x = schema.SchemaNode(type_=T)
             self.assertEqual(x._value_, value)
 
     def test_init_with_default(self):
@@ -40,7 +40,7 @@ class TestInit(unittest.TestCase):
             [[True, False], [bool]],
         ]
         for value, T in cases:
-            x = scheme.SchemeNode(default=value)
+            x = schema.SchemaNode(default=value)
             self.assertEqual(x._meta_.type, T)
 
     def test_init_with_default_and_type(self):
@@ -55,7 +55,7 @@ class TestInit(unittest.TestCase):
             [[True, False], [bool]],
         ]
         for value, T in cases:
-            x = scheme.SchemeNode(default=value, type_=T)
+            x = schema.SchemaNode(default=value, type_=T)
             self.assertEqual(x._meta_.type, T)
 
         cases = [
@@ -65,7 +65,7 @@ class TestInit(unittest.TestCase):
             [[True, False], [bool]],
         ]
         for value, T in cases:
-            scheme.SchemeNode(default=value, type_=T)
+            schema.SchemaNode(default=value, type_=T)
 
     def test_init_with_default_and_type_fail(self):
         cases = [
@@ -79,9 +79,9 @@ class TestInit(unittest.TestCase):
         for value, T in cases:
             with self.assertRaises(
                     AssertionError,
-                    msg="`SchemeNode({}, {}) should fail.".format(value, T),
+                    msg="`SchemaNode({}, {}) should fail.".format(value, T),
             ):
-                scheme.SchemeNode(default=value, type_=T)
+                schema.SchemaNode(default=value, type_=T)
 
         cases = [
             [(1, ), [str]],
@@ -89,40 +89,39 @@ class TestInit(unittest.TestCase):
         for value, T in cases:
             with self.assertRaises(
                     AssertionError,
-                    msg="`SchemeNode({}, {}) should fail.".format(value, T),
+                    msg="`SchemaNode({}, {}) should fail.".format(value, T),
             ):
-                scheme.SchemeNode(default=value, type_=T)
+                schema.SchemaNode(default=value, type_=T)
 
 
 class TestAddEntry(unittest.TestCase):
     def test_add_node(self):
-        x = scheme.SchemeNode(
+        x = schema.SchemaNode(
             is_container=True,
-        ).entry("foo", scheme.SchemeNode(default=1)).finalize()
+        ).entry("foo", schema.SchemaNode(default=1)).freeze()
 
         self.assertEqual(x.foo, 1)
 
-        x = scheme.SchemeNode(is_container=True).entry("foo", 1).finalize()
+        x = schema.SchemaNode(is_container=True).entry("foo", 1).freeze()
         self.assertEqual(x.foo, 1)
 
     def test_add_container(self):
         x = (
-            scheme.SchemeNode(is_container=True
+            schema.SchemaNode(is_container=True
                               ).entry("foo",
-                                      scheme.SchemeNode(is_container=True).entry("bar",
-                                                                                 1)).finalize()
+                                      schema.SchemaNode(is_container=True).entry("bar", 1)).freeze()
         )
         self.assertEqual(x.foo.bar, 1)
 
     def test_add_duplicated_node(self):
         with self.assertRaises(AssertionError):
-            scheme.SchemeNode(is_container=True, ).entry("foo", 1).entry("foo", 2)
+            schema.SchemaNode(is_container=True, ).entry("foo", 1).entry("foo", 2)
 
 
 class TestAddAlias(unittest.TestCase):
     def test_add_alias(self):
         x = (
-            scheme.SchemeNode(is_container=True).entry("foo", 1).alias(
+            schema.SchemaNode(is_container=True).entry("foo", 1).alias(
                 "bar",
                 "foo",
             ).alias(
@@ -131,7 +130,7 @@ class TestAddAlias(unittest.TestCase):
             ).alias(
                 "baz_",
                 "foo",
-            ).finalize()
+            ).freeze()
         )
         self.assertEqual(x.bar, 1)
         self.assertEqual(x.baz, 1)
@@ -139,7 +138,7 @@ class TestAddAlias(unittest.TestCase):
 
     def test_add_broken_alias(self):
         with self.assertRaises(RuntimeError):
-            scheme.SchemeNode(is_container=True).entry(
+            schema.SchemaNode(is_container=True).entry(
                 "foo",
                 1,
             ).alias(
@@ -148,11 +147,11 @@ class TestAddAlias(unittest.TestCase):
             ).alias(
                 "baz",
                 "bar",
-            ).finalize()
+            ).freeze()
 
     def test_add_duplicated_alias(self):
         with self.assertRaises(AssertionError):
-            scheme.SchemeNode(is_container=True).entry(
+            schema.SchemaNode(is_container=True).entry(
                 "foo",
                 1,
             ).entry(
@@ -161,11 +160,11 @@ class TestAddAlias(unittest.TestCase):
             ).alias(
                 "bar",
                 "foo",
-            ).finalize()
+            ).freeze()
 
     def test_add_cyclic_alias(self):
         with self.assertRaises(RuntimeError):
-            scheme.SchemeNode(
+            schema.SchemaNode(
                 is_container=True,
             ).entry(
                 "foo",
@@ -176,48 +175,48 @@ class TestAddAlias(unittest.TestCase):
             ).alias(
                 "baz",
                 "bar",
-            ).finalize()
+            ).freeze()
 
         with self.assertRaises(RuntimeError):
-            scheme.SchemeNode(is_container=True).entry(
+            schema.SchemaNode(is_container=True).entry(
                 "foo",
                 1,
             ).alias(
                 "bar",
                 "bar",
-            ).finalize()
+            ).freeze()
 
 
 class TestGetAttr(unittest.TestCase):
     def test_get_attr_fail(self):
         with self.assertRaises(AttributeError):
-            scheme.SchemeNode(is_container=True).entry(
+            schema.SchemaNode(is_container=True).entry(
                 "foo",
                 1,
-            ).finalize().fooo
+            ).freeze().fooo
 
 
 class TestSetAttr(unittest.TestCase):
     def test_set_attr_readonly(self):
         with self.assertRaises(AttributeError):
-            scheme.SchemeNode(is_container=True).entry(
+            schema.SchemaNode(is_container=True).entry(
                 "foo",
                 1,
-            ).finalize().foo = 2
+            ).freeze().foo = 2
 
     def test_set_attr_writable(self):
-        x = scheme.SchemeNode(is_container=True).entry(
+        x = schema.SchemaNode(is_container=True).entry(
             "foo",
-            scheme.SchemeNode(default=1, attributes="writable"),
-        ).finalize()
+            schema.SchemaNode(default=1, attributes="writable"),
+        ).freeze()
 
         x.foo += 1
         self.assertEqual(x.foo, 2)
 
-        x = scheme.SchemeNode(is_container=True).entry(
+        x = schema.SchemaNode(is_container=True).entry(
             "foo",
-            scheme.SchemeNode(default=(1, ), attributes="writable"),
-        ).finalize()
+            schema.SchemaNode(default=(1, ), attributes="writable"),
+        ).freeze()
 
         x.foo += (2, )
         self.assertEqual(x.foo, [1, 2])
@@ -226,22 +225,22 @@ class TestSetAttr(unittest.TestCase):
 
     def test_set_attr_wrong_type(self):
         with self.assertRaises(TypeError):
-            scheme.SchemeNode(
+            schema.SchemaNode(
                 is_container=True
-            ).entry("foo", scheme.SchemeNode(default=(1, ),
-                                             attributes="writable")).finalize().foo = ["1"]
+            ).entry("foo", schema.SchemaNode(default=(1, ),
+                                             attributes="writable")).freeze().foo = ["1"]
 
         with self.assertRaises(TypeError):
-            scheme.SchemeNode(is_container=True
+            schema.SchemaNode(is_container=True
                               ).entry("foo",
-                                      scheme.SchemeNode(default=1,
-                                                        attributes="writable")).finalize().foo = 1.0
+                                      schema.SchemaNode(default=1,
+                                                        attributes="writable")).freeze().foo = 1.0
 
     def test_set_attr_free_container(self):
-        x = scheme.SchemeNode(is_container=True).entry(
+        x = schema.SchemaNode(is_container=True).entry(
             "foo",
-            scheme.SchemeNode(is_container=True, attributes="writable"),
-        ).finalize()
+            schema.SchemaNode(is_container=True, attributes="writable"),
+        ).freeze()
 
         x.foo.bar = 1
         x.foo.baz = {"boom": [12]}
@@ -256,10 +255,10 @@ class TestSetAttr(unittest.TestCase):
         self.assertEqual(x.foo.baz.biu, "biu")
 
     def test_set_attr_free_container_fail(self):
-        x = scheme.SchemeNode(is_container=True).entry(
+        x = schema.SchemaNode(is_container=True).entry(
             "foo",
-            scheme.SchemeNode(is_container=True, attributes="writable"),
-        ).finalize()
+            schema.SchemaNode(is_container=True, attributes="writable"),
+        ).freeze()
 
         x.foo.bar = 1
         with self.assertRaises(TypeError):
@@ -269,10 +268,10 @@ class TestSetAttr(unittest.TestCase):
             x.foo.bar = {"baz": 1}
 
     def test_set_attr_free_container_dict(self):
-        x = scheme.SchemeNode(is_container=True).entry(
+        x = schema.SchemaNode(is_container=True).entry(
             "foo",
-            scheme.SchemeNode(is_container=True, attributes="w"),
-        ).finalize()
+            schema.SchemaNode(is_container=True, attributes="w"),
+        ).freeze()
 
         x.foo = {"bar": 1}
         self.assertEqual(x.value_dict(), {"foo": {"bar": 1}})
@@ -287,35 +286,35 @@ class TestSetAttr(unittest.TestCase):
         )
 
     def test_set_attr_container_dict_fail(self):
-        x = scheme.SchemeNode(is_container=True).entry(
+        x = schema.SchemaNode(is_container=True).entry(
             "foo",
-            scheme.SchemeNode(is_container=True),
-        ).finalize()
+            schema.SchemaNode(is_container=True),
+        ).freeze()
 
         with self.assertRaises(AttributeError) as cm:
             x.foo = {"bar": 1}
             self.assertEqual(str(cm.exception), "Cannot update a read-only entry 'foo'.")
 
-    def test_set_attr_before_finalized(self):
-        x = scheme.SchemeNode(is_container=True).entry("foo", 1)
+    def test_set_attr_before_frozen(self):
+        x = schema.SchemaNode(is_container=True).entry("foo", 1)
         x.foo = 2
 
 
 class TestVerbose(unittest.TestCase):
     def test_str(self):
-        x = scheme.SchemeNode(is_container=True).entry(
+        x = schema.SchemaNode(is_container=True).entry(
             "foo",
             1,
         ).entry(
             "bar",
-            scheme.SchemeNode(is_container=True).entry(
+            schema.SchemaNode(is_container=True).entry(
                 "baz",
                 "test",
             ).entry(
                 "baz_list",
                 ["test"],
             ),
-        ).finalize()
+        ).freeze()
 
         self.assertEqual(
             str(x),
@@ -328,61 +327,61 @@ class TestVerbose(unittest.TestCase):
 
 class TestDeclaritveConstructor(unittest.TestCase):
     def test_from_class(self):
-        @scheme.SchemeNode.from_class
+        @schema.SchemaNode.from_class
         class Config:
             foo: [str]
 
             class bar:
                 baz: ["writable"] = 1.0
 
-        x = Config().finalize()
+        x = Config().freeze()
         x.bar.baz = 3.14
         self.assertEqual(str(x), "foo: ([str]) []\n" "bar:\n" "  baz: (float) 3.14\n")
 
     def test_from_class_writable_container(self):
-        @scheme.SchemeNode.from_class
+        @schema.SchemaNode.from_class
         class Config:
             foo: [str]
 
-            @scheme.SchemeNode.writable
+            @schema.SchemaNode.writable
             class bar:
                 pass
 
-        x = Config().finalize()
+        x = Config().freeze()
         x.bar.baz = 3.14
         self.assertEqual(str(x), "foo: ([str]) []\n" "bar:\n" "  baz: (float) 3.14\n")
 
     def test_from_class_alias(self):
-        @scheme.SchemeNode.from_class
+        @schema.SchemaNode.from_class
         class Config:
             foo: int
             bar: "foo"
 
-        x = Config().finalize()
+        x = Config().freeze()
         self.assertEqual(str(x), "foo: (int) 0\n" "bar -> foo\n")
         self.assertEqual(x.bar, 0)
 
     def test_from_class_type_attributes(self):
-        @scheme.SchemeNode.from_class
+        @schema.SchemaNode.from_class
         class Config:
             foo: [float, "writable"] = 9
 
-        x = Config().finalize()
+        x = Config().freeze()
         x.foo = 3.14
         self.assertEqual(str(x), "foo: (float) 3.14\n")
 
 
 class TestRepr(unittest.TestCase):
     def test_repr(self):
-        @scheme.SchemeNode.from_class
+        @schema.SchemaNode.from_class
         class Config:
             pass
 
-        self.assertEqual(str(Config), "<SchemeNode Builder>")
+        self.assertEqual(str(Config), "<SchemaNode Builder>")
 
 
 class TestMerge(unittest.TestCase):
-    @scheme.SchemeNode.from_class
+    @schema.SchemaNode.from_class
     class Config:
         foo_1: int
         foo_2: [str]
@@ -393,7 +392,7 @@ class TestMerge(unittest.TestCase):
 
     def test_merge_from_dict(self):
         dct = {"foo_1": 42, "foo_2": ["bar"], "sub": {"foo_3": True, "foo_4": [123]}}
-        cfg = self.Config().merge_from_dict(dct).finalize()
+        cfg = self.Config().merge_from_dict(dct).freeze()
 
         self.assertEqual(cfg.value_dict(), dct)
 
@@ -401,7 +400,7 @@ class TestMerge(unittest.TestCase):
         dct = {"foo_1": 42, "foo_2": ["bar"], "sub": {"foo_3": True, "foo_5": [123]}}
 
         with self.assertRaises(AttributeError) as cm:
-            cfg = self.Config().merge_from_dict(dct).finalize()
+            cfg = self.Config().merge_from_dict(dct).freeze()
         self.assertEqual(
             str(cm.exception),
             "Adding extra entries 'foo_5' to read-only container 'sub' is forbidden",
@@ -411,24 +410,24 @@ class TestMerge(unittest.TestCase):
         dct = {"foo_1": 42, "foo_2": ["bar"], "sub": 123}
 
         with self.assertRaises(TypeError) as cm:
-            cfg = self.Config().merge_from_dict(dct).finalize()
+            cfg = self.Config().merge_from_dict(dct).freeze()
         self.assertEqual(
             str(cm.exception),
             "Expect value to be a dict for container entry 'sub', got <class 'int'>",
         )
 
     def test_merge_from_dict_writable_container(self):
-        @scheme.SchemeNode.from_class
+        @schema.SchemaNode.from_class
         class Config:
-            @scheme.SchemeNode.writable
+            @schema.SchemaNode.writable
             class sub:
                 pass
 
-        cfg = Config().merge_from_dict({"sub": {"foo": "bar"}}).finalize()
+        cfg = Config().merge_from_dict({"sub": {"foo": "bar"}}).freeze()
         self.assertEqual(cfg.value_dict(), {"sub": {"foo": "bar"}})
 
     def test_load_from_file(self):
-        cfg = self.Config().merge_from_file("yaml_example/a/b/c.yaml").finalize()
+        cfg = self.Config().merge_from_file("yaml_example/a/b/c.yaml").freeze()
         self.assertEqual(
             cfg.value_dict(),
             {
@@ -441,7 +440,7 @@ class TestMerge(unittest.TestCase):
             },
         )
 
-        cfg = self.Config().merge_from_file("yaml_example/a.yaml").finalize()
+        cfg = self.Config().merge_from_file("yaml_example/a.yaml").freeze()
         self.assertEqual(
             cfg.value_dict(),
             {
@@ -456,10 +455,10 @@ class TestMerge(unittest.TestCase):
 
     def test_load_from_file_typeerror(self):
         with self.assertRaises(TypeError):
-            cfg = self.Config().merge_from_file("yaml_example/a/b.yaml").finalize()
+            cfg = self.Config().merge_from_file("yaml_example/a/b.yaml").freeze()
 
 
-class Test_dump(unittest.TestCase):
+class TestDump(unittest.TestCase):
     def setUp(self):
         import tempfile
         self.temp_fd, self.temp_file = tempfile.mkstemp(suffix='.yml')
@@ -481,7 +480,7 @@ class Test_dump(unittest.TestCase):
         '',
     ])
 
-    @scheme.SchemeNode.from_class
+    @schema.SchemaNode.from_class
     class Config:
         a = 1
         b = False
@@ -511,34 +510,34 @@ class Test_dump(unittest.TestCase):
 
 class TestListValue(unittest.TestCase):
     def test_independent_list(self):
-        @scheme.SchemeNode.from_class
+        @schema.SchemaNode.from_class
         class Config:
             lst: [[int], 'w'] = [0]
 
-        cfg = Config().finalize()
+        cfg = Config().freeze()
         cfg.lst.append(1)
         self.assertEqual(cfg.lst, [0, 1])
-        cfg = Config().finalize()
+        cfg = Config().freeze()
         cfg.lst.append(1)
         self.assertEqual(cfg.lst, [0, 1])
 
     def test_list_mutability(self):
-        @scheme.SchemeNode.from_class
+        @schema.SchemaNode.from_class
         class Config:
             lst: [int] = [0]
 
         cfg = Config()
         cfg.lst.append(1)
         self.assertEqual(cfg.lst, [0, 1])
-        cfg.finalize()
+        cfg.freeze()
         self.assertRaises(RuntimeError, cfg.lst.append, 1)
         self.assertRaises(RuntimeError, cfg.lst.insert, 1, 1)
 
-        @scheme.SchemeNode.from_class
+        @schema.SchemaNode.from_class
         class Config:
             lst: [[int], 'w'] = [0]
 
-        cfg = Config().finalize()
+        cfg = Config().freeze()
         cfg.lst.append(1)
         self.assertEqual(cfg.lst, [0, 1])
         self.assertRaises(TypeError, cfg.lst.append, "foo")
@@ -547,25 +546,25 @@ class TestListValue(unittest.TestCase):
 
 class TestSingleton(unittest.TestCase):
     def test_singleton_True(self):
-        @scheme.SchemeNode.from_class(singleton=True)
+        @schema.SchemaNode.from_class(singleton=True)
         class Config:
             pass
 
         self.assertIs(Config(), Config())
 
     def test_singleton_False(self):
-        @scheme.SchemeNode.from_class(singleton=False)
+        @schema.SchemaNode.from_class(singleton=False)
         class Config:
             pass
 
         self.assertIsNot(Config(), Config())
 
     def test_singleton_different_template(self):
-        @scheme.SchemeNode.from_class(singleton=True)
+        @schema.SchemaNode.from_class(singleton=True)
         class ConfigA:
             pass
 
-        @scheme.SchemeNode.from_class(singleton=True)
+        @schema.SchemaNode.from_class(singleton=True)
         class ConfigB:
             pass
 
@@ -579,7 +578,7 @@ class TestDistributed(ReloadModuleTestCase):
     ]
     attach = [
         ['mp_call', 'nagisa.dl.torch.misc.testing:mp_call'],
-        ['SchemeNode', 'nagisa.core.state.scheme:SchemeNode'],
+        ['SchemaNode', 'nagisa.core.state.schema:SchemaNode'],
     ]
 
     @staticmethod
@@ -588,7 +587,7 @@ class TestDistributed(ReloadModuleTestCase):
         Q.put((cfg.value_dict(), cfg.type_dict(), cfg._finalized_))
 
     def test_pickable(self):
-        @self.SchemeNode.from_class
+        @self.SchemaNode.from_class
         class Config:
             a = 'foo'
             b: [int]
@@ -597,7 +596,7 @@ class TestDistributed(ReloadModuleTestCase):
             class d:
                 e = False
 
-        cfg = Config().finalize()
+        cfg = Config().freeze()
         result = self.mp_call(self.main_test_picklable, args=(cfg, ))
         cfg.c = ['bar']
         self.assertEqual(result, [(cfg.value_dict(), cfg.type_dict(), True)] * 4)

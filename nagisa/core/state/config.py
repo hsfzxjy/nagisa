@@ -1,10 +1,10 @@
 from nagisa.core.state import envvar
-from nagisa.core.state.scheme import SchemeNode
+from nagisa.core.state.schema import SchemaNode
 from nagisa.core.functools import adapt_spec
 from nagisa.core.primitive.typing import str_to_object
 
 
-class ConfigNode(SchemeNode):
+class ConfigNode(SchemaNode):
 
     __slots__ = []
     __instance__ = None

@@ -20,7 +20,7 @@ class Config:
 class Test_merge(unittest.TestCase):
     def test_merge_from_envvar(self):
         with mock_env("FOO2", "36", "FOO3", "baz"):
-            config = Config().merge_from_envvar().finalize()
+            config = Config().merge_from_envvar().freeze()
         self.assertEqual(
             config.value_dict(),
             {
@@ -34,7 +34,7 @@ class Test_merge(unittest.TestCase):
         )
 
         with mock_env("FOO2", "36"):
-            config = Config().merge_from_envvar().finalize()
+            config = Config().merge_from_envvar().freeze()
         self.assertEqual(
             config.value_dict(),
             {
@@ -48,7 +48,7 @@ class Test_merge(unittest.TestCase):
         )
 
     def test_merge_from_args(self):
-        config = Config().merge_from_args(argparse.Namespace(foo4=[1]), ).finalize()
+        config = Config().merge_from_args(argparse.Namespace(foo4=[1]), ).freeze()
         self.assertEqual(
             config.value_dict(),
             {
@@ -61,7 +61,7 @@ class Test_merge(unittest.TestCase):
             },
         )
 
-        config = (Config().merge_from_args(argparse.Namespace(foo4=[1], foo2=36), ).finalize())
+        config = (Config().merge_from_args(argparse.Namespace(foo4=[1], foo2=36), ).freeze())
         self.assertEqual(
             config.value_dict(),
             {
@@ -87,7 +87,7 @@ class Test_merge(unittest.TestCase):
             "sub.foo_3",
             "remainder",
         ]
-        config = Config().merge_from_remainder(remainder).finalize()
+        config = Config().merge_from_remainder(remainder).freeze()
         self.assertEqual(
             config.value_dict(),
             {

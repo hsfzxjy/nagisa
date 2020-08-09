@@ -44,15 +44,15 @@ class Test_object_from_envvar(unittest.TestCase):
 
 class Test_option(unittest.TestCase):
     def test_modify_from_store(self):
-        from nagisa.core.state.scheme import SchemeNode
+        from nagisa.core.state.schema import SchemaNode
 
         envvar._registry.unsync()
-        scheme_node = SchemeNode(is_container=True, attributes=["w"]).finalize()
-        envvar._registry.sync_with(scheme_node)
+        schema_node = SchemaNode(is_container=True, attributes=["w"]).freeze()
+        envvar._registry.sync_with(schema_node)
 
         with mock_env("FOO1", "['bar']"):
-            scheme_node.FOO2 = "(True,)"
-            scheme_node.FOO3 = [42.]
+            schema_node.FOO2 = "(True,)"
+            schema_node.FOO3 = [42.]
             self.assertEqual(envvar.option("FOO1", T=[str]), ['bar'])
             self.assertEqual(envvar.option("FOO2", T=[bool]), [True])
             self.assertRaises(TypeError, envvar.option, "FOO3", T=[bool])
@@ -61,11 +61,11 @@ class Test_option(unittest.TestCase):
 
 class Test_option_scan(unittest.TestCase):
     def setUp(self):
-        from nagisa.core.state.scheme import SchemeNode
+        from nagisa.core.state.schema import SchemaNode
 
         envvar._registry.unsync()
-        self.scheme_node = SchemeNode(is_container=True, attributes=["w"])
-        envvar._registry.sync_with(self.scheme_node)
+        self.schema_node = SchemaNode(is_container=True, attributes=["w"])
+        envvar._registry.sync_with(self.schema_node)
 
     def test_scan(self):
         with mock_env(
@@ -78,7 +78,7 @@ class Test_option_scan(unittest.TestCase):
         ):
             envvar._registry.scan("envvar_case_1")
             self.assertEqual(
-                self.scheme_node.value_dict(),
+                self.schema_node.value_dict(),
                 {
                     "mod_1_foo_1": 42,
                     "mod_1_foo_2": None,
@@ -88,7 +88,7 @@ class Test_option_scan(unittest.TestCase):
                 },
             )
             self.assertEqual(
-                self.scheme_node.type_dict(),
+                self.schema_node.type_dict(),
                 {
                     "mod_1_foo_1": (int, None),
                     "mod_1_foo_2": (float, None),
