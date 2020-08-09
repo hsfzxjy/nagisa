@@ -59,9 +59,7 @@ class TestSwitchableList(unittest.TestCase):
         lst.append(42)
         self.assertEqual(lst, [42, 42])
         del c
-        with self.assertRaises(RuntimeError) as cm:
-            lst.mutable(False)
-        self.assertEqual(str(cm.exception), 'Host has been freed')
+        self.assertRaisesRegex(RuntimeError, 'Host has been freed', lst.mutable, False)
 
 
 class TestImmutableList(unittest.TestCase):

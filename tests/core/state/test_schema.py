@@ -7,10 +7,7 @@ from nagisa.core.misc.testing import ReloadModuleTestCase
 class TestInit(unittest.TestCase):
     def test_init_with_bad_attrs(self):
         self.assertRaisesRegex(
-            ValueError,
-            r"^Cannot parse attrs \['bad_attr'\]$",
-            schema.SchemaNode,
-            attrs='bad_attr'
+            ValueError, r"^Cannot parse attrs \['bad_attr'\]$", schema.SchemaNode, attrs='bad_attr'
         )
 
     def test_init_empty(self):
@@ -317,19 +314,16 @@ class TestSetAttr(unittest.TestCase):
             },
         )
 
-        with self.assertRaises(TypeError) as cm:
+        with self.assertRaisesRegex(
+                TypeError,
+                "Expect value to be a dict for container entry 'foo', got <class 'int'>"):
             x.foo = 1
-        self.assertEqual(
-            str(cm.exception),
-            "Expect value to be a dict for container entry 'foo', got <class 'int'>",
-        )
 
     def test_set_attr_container_dict_fail(self):
         x = schema.SchemaNode().entry("foo").freeze()
 
-        with self.assertRaises(AttributeError) as cm:
+        with self.assertRaisesRegex(AttributeError, "Cannot update read-only entry 'foo'"):
             x.foo = {"bar": 1}
-            self.assertEqual(str(cm.exception), "Cannot update a read-only entry 'foo'.")
 
     def test_set_attr_before_frozen(self):
         x = schema.SchemaNode().entry(
@@ -452,12 +446,10 @@ class TestMerge(unittest.TestCase):
             },
         }
 
-        with self.assertRaises(AttributeError) as cm:
+        with self.assertRaisesRegex(
+                AttributeError,
+                "Adding extra entries 'foo_5' to read-only container 'sub' is forbidden"):
             cfg = self.Config().merge_from_dict(dct).freeze()
-        self.assertEqual(
-            str(cm.exception),
-            "Adding extra entries 'foo_5' to read-only container 'sub' is forbidden",
-        )
 
     def test_merge_from_dict_typeerror(self):
         dct = {
@@ -466,12 +458,10 @@ class TestMerge(unittest.TestCase):
             "sub": 123,
         }
 
-        with self.assertRaises(TypeError) as cm:
+        with self.assertRaisesRegex(
+                TypeError,
+                "Expect value to be a dict for container entry 'sub', got <class 'int'>"):
             cfg = self.Config().merge_from_dict(dct).freeze()
-        self.assertEqual(
-            str(cm.exception),
-            "Expect value to be a dict for container entry 'sub', got <class 'int'>",
-        )
 
     def test_merge_from_dict_writable_container(self):
         @schema.SchemaNode.from_class
