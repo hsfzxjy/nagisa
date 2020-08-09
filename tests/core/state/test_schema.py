@@ -6,7 +6,7 @@ from nagisa.core.misc.testing import ReloadModuleTestCase
 
 class TestInit(unittest.TestCase):
     def test_init_empty(self):
-        self.assertRaises(AssertionError, schema.SchemaNode)
+        self.assertTrue(schema.SchemaNode()._meta_.is_container)
 
     def test_init_with_type(self):
         cases = [
@@ -94,23 +94,23 @@ class TestInit(unittest.TestCase):
 
 class TestAddEntry(unittest.TestCase):
     def test_add_node(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
             schema.SchemaNode(default=1),
         ).freeze()
 
         self.assertEqual(x.foo, 1)
 
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
             1,
         ).freeze()
         self.assertEqual(x.foo, 1)
 
     def test_add_container(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "bar",
                 1,
             ),
@@ -120,7 +120,7 @@ class TestAddEntry(unittest.TestCase):
 
     def test_add_duplicated_node(self):
         with self.assertRaises(AssertionError):
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "foo",
                 1,
             ).entry(
@@ -131,7 +131,7 @@ class TestAddEntry(unittest.TestCase):
 
 class TestAddAlias(unittest.TestCase):
     def test_add_alias(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
             1,
         ).alias(
@@ -151,7 +151,7 @@ class TestAddAlias(unittest.TestCase):
 
     def test_add_broken_alias(self):
         with self.assertRaises(RuntimeError):
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "foo",
                 1,
             ).alias(
@@ -164,7 +164,7 @@ class TestAddAlias(unittest.TestCase):
 
     def test_add_duplicated_alias(self):
         with self.assertRaises(AssertionError):
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "foo",
                 1,
             ).entry(
@@ -177,7 +177,7 @@ class TestAddAlias(unittest.TestCase):
 
     def test_add_cyclic_alias(self):
         with self.assertRaises(RuntimeError):
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "foo",
                 1,
             ).alias(
@@ -189,7 +189,7 @@ class TestAddAlias(unittest.TestCase):
             ).freeze()
 
         with self.assertRaises(RuntimeError):
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "foo",
                 1,
             ).alias(
@@ -201,7 +201,7 @@ class TestAddAlias(unittest.TestCase):
 class TestGetAttr(unittest.TestCase):
     def test_get_attr_fail(self):
         with self.assertRaises(AttributeError):
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "foo",
                 1,
             ).freeze().fooo
@@ -210,13 +210,13 @@ class TestGetAttr(unittest.TestCase):
 class TestSetAttr(unittest.TestCase):
     def test_set_attr_readonly(self):
         with self.assertRaises(AttributeError):
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "foo",
                 1,
             ).freeze().foo = 2
 
     def test_set_attr_writable(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
             schema.SchemaNode(
                 default=1,
@@ -227,7 +227,7 @@ class TestSetAttr(unittest.TestCase):
         x.foo += 1
         self.assertEqual(x.foo, 2)
 
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
             schema.SchemaNode(
                 default=(1, ),
@@ -242,13 +242,13 @@ class TestSetAttr(unittest.TestCase):
 
     def test_set_attr_wrong_type(self):
         with self.assertRaises(TypeError):
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "foo",
                 schema.SchemaNode(default=(1, ), attributes="writable"),
             ).freeze().foo = ["1"]
 
         with self.assertRaises(TypeError):
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "foo",
                 schema.SchemaNode(
                     default=1,
@@ -257,9 +257,9 @@ class TestSetAttr(unittest.TestCase):
             ).freeze().foo = 1.0
 
     def test_set_attr_free_container(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
-            schema.SchemaNode(is_container=True, attributes="writable"),
+            schema.SchemaNode(attributes="writable"),
         ).freeze()
 
         x.foo.bar = 1
@@ -275,9 +275,9 @@ class TestSetAttr(unittest.TestCase):
         self.assertEqual(x.foo.baz.biu, "biu")
 
     def test_set_attr_free_container_fail(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
-            schema.SchemaNode(is_container=True, attributes="writable"),
+            schema.SchemaNode(attributes="writable"),
         ).freeze()
 
         x.foo.bar = 1
@@ -288,9 +288,9 @@ class TestSetAttr(unittest.TestCase):
             x.foo.bar = {"baz": 1}
 
     def test_set_attr_free_container_dict(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
-            schema.SchemaNode(is_container=True, attributes="w"),
+            schema.SchemaNode(attributes="w"),
         ).freeze()
 
         x.foo = {"bar": 1}
@@ -320,9 +320,9 @@ class TestSetAttr(unittest.TestCase):
         )
 
     def test_set_attr_container_dict_fail(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
-            schema.SchemaNode(is_container=True),
+            schema.SchemaNode(),
         ).freeze()
 
         with self.assertRaises(AttributeError) as cm:
@@ -330,7 +330,7 @@ class TestSetAttr(unittest.TestCase):
             self.assertEqual(str(cm.exception), "Cannot update a read-only entry 'foo'.")
 
     def test_set_attr_before_frozen(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
             1,
         )
@@ -339,12 +339,12 @@ class TestSetAttr(unittest.TestCase):
 
 class TestVerbose(unittest.TestCase):
     def test_str(self):
-        x = schema.SchemaNode(is_container=True).entry(
+        x = schema.SchemaNode().entry(
             "foo",
             1,
         ).entry(
             "bar",
-            schema.SchemaNode(is_container=True).entry(
+            schema.SchemaNode().entry(
                 "baz",
                 "test",
             ).entry(

@@ -51,7 +51,7 @@ class SchemaNode:
             return value
 
         if isinstance(value, dict):
-            result = cls(attributes=attributes, is_container=True, parent=parent)
+            result = cls(attributes=attributes, parent=parent)
             for k, v in value.items():
                 result.entry(
                     k,
@@ -79,7 +79,7 @@ class SchemaNode:
         def _build(value, path, parent):
             meta = meta_dict[path]
             if isinstance(value, dict):
-                result = cls(is_container=True, parent=parent, meta=meta)
+                result = cls(parent=parent, meta=meta)
                 result._alias_entries_ = alias_dict[path]
                 for k, v in value.items():
                     result.entry(k, _build(v, path + (k, ), result))
@@ -120,9 +120,9 @@ class SchemaNode:
         default=None,
         type_=None,
         attributes=None,
-        is_container=False,
         meta=None,
     ):
+        is_container = default is None and type_ is None
         if not is_container:
             if meta is None:
                 final_type, default = self._infer_(type_, default)
@@ -545,7 +545,7 @@ class _SchemeBuilder:
             attributes = ["writable"]
         else:
             attributes = []
-        node = schema_class(is_container=True, attributes=attributes)
+        node = schema_class(attributes=attributes)
 
         for name, default in self._get_entryname_default_pairs_(template):
             if inspect.isclass(default):

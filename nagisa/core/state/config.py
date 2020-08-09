@@ -69,7 +69,7 @@ class ConfigNode(SchemaNode):
         return self
 
     def track_envvar(self, dirname=".", func_names=()):
-        self.entry("ENVVAR", self.__class__(is_container=True, attributes=["w"]))
+        self.entry("ENVVAR", self.__class__(attributes=["w"]))
         envvar._registry.sync_with(self.ENVVAR)
         envvar._registry.scan(dirname, caller_level=-2, func_names=func_names)
         return self
