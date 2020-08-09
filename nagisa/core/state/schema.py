@@ -74,6 +74,7 @@ class SchemaNode:
             meta = meta_dict[path]
             if isinstance(value, dict):
                 result = cls(is_container=True, parent=parent, meta=meta)
+                result._alias_entries_ = alias_dict[path]
                 for k, v in value.items():
                     result.entry(k, _build(v, path + (k, ), result))
             else:
