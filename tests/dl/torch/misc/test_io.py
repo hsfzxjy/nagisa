@@ -1,4 +1,6 @@
 import os
+import shutil
+import tempfile
 import unittest
 
 import torch
@@ -15,14 +17,24 @@ skip_if_local_and_no_proxy = unittest.skipIf(
 )
 
 
-class TestDownloadUrlToFile(TorchTestCase):
-
-    dest = "/tmp/nagisa.io.file__DOWNLOADED__"
+class BaseTestCase(TorchTestCase):
+    expected_data = {
+        'tensor': torch.tensor(range(100), dtype=float),
+        'string': 'hellow world',
+    }
 
     def tearDown(self):
+        os.close(self.fd)
         if os.path.exists(self.dest):
             os.remove(self.dest)
+        shutil.rmtree(self.dest_dir, ignore_errors=True)
 
+    def setUp(self):
+        self.fd, self.dest = tempfile.mkstemp()
+        self.dest_dir = tempfile.mkdtemp()
+
+
+class TestDownloadUrlToFile(BaseTestCase):
     @skip_if_local_and_no_proxy
     def test_small_file(self):
         download_url_to_file(
@@ -32,8 +44,7 @@ class TestDownloadUrlToFile(TorchTestCase):
         )
 
         data = torch.load(self.dest)
-        self.assertEqual(data["tensor"], torch.tensor(range(100), dtype=float))
-        self.assertEqual(data["string"], "hello world")
+        self.assertEqual(torch.load(self.dest), self.expected_data)
 
     @skip_if_local
     def test_big_file(self):
@@ -45,61 +56,43 @@ class TestDownloadUrlToFile(TorchTestCase):
         )
 
 
-class TestLoadStateDict(TorchTestCase):
-    def tearDown(self):
-        os.remove(self.dest)
-
+class TestLoadStateDict(BaseTestCase):
     def test_load_local_small_file(self):
-        os.makedirs("/tmp/a/", exist_ok=True)
-        data = {
-            "tensor": torch.tensor(range(100), dtype=float),
-            "string": "hello world",
-        }
         torch.save(
-            data, "/tmp/a/test.pth",
+            self.expected_data, self.dest,
             **(
                 {
                     '_use_new_zipfile_serialization': False
                 } if torch.__version__.startswith('1.6.') else {}
             )
         )
-        data, self.dest = load_state_dict(
-            "/tmp/a/test.pth",
-            model_dir="/tmp/a/",
-            return_filename=True,
-        )
+        loaded_data = load_state_dict(self.dest, model_dir=self.dest_dir)
 
-        self.assertEqual(data["tensor"], torch.tensor(range(100), dtype=float))
-        self.assertEqual(data["string"], "hello world")
+        self.assertEqual(self.expected_data, loaded_data)
 
     @skip_if_local_and_no_proxy
     def test_small_file(self):
-        data, self.dest = load_state_dict(
+        data = load_state_dict(
             "https://drive.google.com/file/d/1XWYEAjrcJQ7VQbxJtEk37v5q5Otnm3dV/view",
-            return_filename=True,
+            model_dir=self.dest_dir,
         )
 
-        self.assertEqual(data["tensor"], torch.tensor(range(100), dtype=float))
-        self.assertEqual(data["string"], "hello world")
+        self.assertEqual(data, self.expected_data)
 
     @skip_if_local_and_no_proxy
     def test_small_file_to_custom_dir(self):
-        os.makedirs("/tmp/a/", exist_ok=True)
-        data, self.dest = load_state_dict(
+        data = load_state_dict(
             "https://drive.google.com/file/d/1XWYEAjrcJQ7VQbxJtEk37v5q5Otnm3dV/view",
-            model_dir="/tmp/a/",
-            return_filename=True,
+            model_dir=self.dest_dir,
         )
 
-        self.assertEqual(data["tensor"], torch.tensor(range(100), dtype=float))
-        self.assertEqual(data["string"], "hello world")
+        self.assertEqual(self.expected_data, data)
 
-    @skip_if_local
+    @skip_if_local_and_no_proxy
     def test_big_file(self):
         # A ~40MB zip file which requires confirm code
-        os.makedirs("/tmp/a/", exist_ok=True)
         self.dest = prepare_resource(
             "https://drive.google.com/file/d/1X0NTkVNlXBvC0uRj1vWl4Ow7MA4bNQtk/view",
-            "/tmp/a/",
+            self.dest_dir,
             check_hash="71c70feee092db533f959362f866896afa59a57fb04c290f16667a37882589d3",
         )

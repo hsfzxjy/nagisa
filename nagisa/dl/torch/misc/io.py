@@ -50,4 +50,4 @@ def load_state_dict(
     if return_filename:
         return loaded, cached_file
 
-    return cached_file
+    return loaded
