@@ -1,43 +1,40 @@
 import unittest
-from importlib import import_module
+
+from nagisa.core.misc.testing import ReloadModuleTestCase
 
 
-class BaseTestCase(unittest.TestCase):
-    def setUp(self):
-        import sys
-
-        for n in list(filter(lambda x: x.startswith("nagisa.dl.torch"), sys.modules)):
-            del sys.modules[n]
-
-        from nagisa.dl.torch import data
-        from nagisa.dl.torch.data._data_resolver import DataResolver
-
-        self.s = data
-        self.DataResolver = DataResolver
+class BaseTestCase(ReloadModuleTestCase):
+    drop_modules = [
+        '^nagisa.dl.torch',
+    ]
+    attach = [
+        ['data_module', 'nagisa.dl.torch.data'],
+        ['DataResolver', 'nagisa.dl.torch.data._data_resolver:DataResolver'],
+    ]
 
 
 class TestCheckDep(BaseTestCase):
     def test_basic(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1(id):
             pass
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res2(id, res1):
             pass
 
-        @self.s.Item.r
+        @self.data_module.Item.r
         def item1(id, res1, res2):
             pass
 
         self.DataResolver(None, None)._check_dep_()
 
     def test_cyclic_resource(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1(res2):
             pass
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res2(res1):
             pass
 
@@ -45,15 +42,15 @@ class TestCheckDep(BaseTestCase):
             self.DataResolver(None, None)._check_dep_()
 
     def test_cyclic_resource_with(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1(res2):
             pass
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res2(res1):
             pass
 
-        @self.s.Item.r
+        @self.data_module.Item.r
         def item(res1):
             pass
 
@@ -61,7 +58,7 @@ class TestCheckDep(BaseTestCase):
             self.DataResolver(None, None)._check_dep_()
 
     def test_cyclic_self(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1(res1):
             pass
 
@@ -69,7 +66,7 @@ class TestCheckDep(BaseTestCase):
             self.DataResolver(None, None)._check_dep_()
 
     def test_bad_dep_name(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1(bad):
             pass
 
@@ -77,22 +74,22 @@ class TestCheckDep(BaseTestCase):
             self.DataResolver(None, None)._check_dep_()
 
     def test_scope(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1():
             pass
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res2(id, res1):
             pass
 
         self.DataResolver(None, None)._check_dep_()
 
     def test_bad_scope(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1(id):
             pass
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res2(res1):
             pass
 
@@ -100,11 +97,11 @@ class TestCheckDep(BaseTestCase):
             self.DataResolver(None, None)._check_dep_()
 
     def test_bad_scope_item(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1(id):
             pass
 
-        @self.s.Item.r
+        @self.data_module.Item.r
         def res2(res1):
             pass
 
@@ -116,12 +113,12 @@ class TestCache(BaseTestCase):
     def test_cache_global_resource(self):
         times = 0
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1():
             nonlocal times
             times += 1
 
-        @self.s.Item.r
+        @self.data_module.Item.r
         def item1(res1):
             pass
 
@@ -134,12 +131,12 @@ class TestCache(BaseTestCase):
     def test_cache_local_resource_no_context(self):
         times = 0
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1(id):
             nonlocal times
             times += 1
 
-        @self.s.Item.r
+        @self.data_module.Item.r
         def item1(id, res1):
             pass
 
@@ -156,12 +153,12 @@ class TestCache(BaseTestCase):
     def test_cache_local_resource_with_context(self):
         times = 0
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1(id):
             nonlocal times
             times += 1
 
-        @self.s.Item.r
+        @self.data_module.Item.r
         def item1(id, res1):
             pass
 
@@ -181,12 +178,12 @@ class TestCache(BaseTestCase):
     def test_cache_global_resource_with_context(self):
         times = 0
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1():
             nonlocal times
             times += 1
 
-        @self.s.Item.r
+        @self.data_module.Item.r
         def item1(res1):
             pass
 
@@ -205,12 +202,12 @@ class TestCache(BaseTestCase):
     def test_different_meta(self):
         times = 0
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def res1():
             nonlocal times
             times += 1
 
-        @self.s.Item.r
+        @self.data_module.Item.r
         def item1(res1):
             pass
 
@@ -226,25 +223,25 @@ class TestCache(BaseTestCase):
 
 class TestGetIdList(BaseTestCase):
     def test_basic(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def id_list():
             return list(range(10))
 
         self.assertEqual(self.DataResolver(None, None).get_id_list(), list(range(10)))
 
     def test_basic_with_dep(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def nums(meta):
             return list(range(meta))
 
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def id_list(nums):
             return nums
 
         self.assertEqual(self.DataResolver(None, 10).get_id_list(), list(range(10)))
 
     def test_bad_scope(self):
-        @self.s.Resource.r
+        @self.data_module.Resource.r
         def id_list(id):
             return list(range(10))
 

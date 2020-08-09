@@ -1,20 +1,20 @@
-import sys
 import unittest
 
+from nagisa.core.misc.testing import ReloadModuleTestCase
 
-class BaseDatasetTestCase(unittest.TestCase):
-    def setUp(self):
-        for n in list(filter(lambda x: x.startswith("nagisa.dl.torch"), sys.modules)):
-            del sys.modules[n]
 
-        from nagisa.dl.torch import data
-
-        self.s = data
+class BaseDatasetTestCase(ReloadModuleTestCase):
+    drop_modules = [
+        '^nagisa.dl.torch',
+    ]
+    attach = [
+        ['data_module', 'nagisa.dl.torch.data'],
+    ]
 
 
 class TestGetDataset(BaseDatasetTestCase):
     def test_get_dataset(self):
-        s = self.s
+        s = self.data_module
 
         s.item_keys.set(["img"])
 

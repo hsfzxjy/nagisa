@@ -1,4 +1,5 @@
 import unittest
+
 from nagisa.core.primitive.proxy import proxy, SwitchableList
 
 

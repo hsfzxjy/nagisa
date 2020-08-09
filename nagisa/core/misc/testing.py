@@ -14,12 +14,12 @@ class ReloadModuleTestCase(unittest.TestCase):
             if any(x.match(mod_name) is not None for x in drop_modules):
                 del sys.modules[mod_name]
 
-            for attr_name, spec in self.attach:
-                if ':' in spec:
-                    mod_path, _, obj_name = spec.partition(':')
-                else:
-                    mod_path = spec
-                    obj_name = None
-                mod = importlib.import_module(mod_path)
-                obj = mod if obj_name is None else getattr(mod, obj_name)
-                setattr(self, attr_name, obj)
+        for attr_name, spec in self.attach:
+            if ':' in spec:
+                mod_path, _, obj_name = spec.partition(':')
+            else:
+                mod_path = spec
+                obj_name = None
+            mod = importlib.import_module(mod_path)
+            obj = mod if obj_name is None else getattr(mod, obj_name)
+            setattr(self, attr_name, obj)

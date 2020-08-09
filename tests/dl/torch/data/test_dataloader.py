@@ -1,36 +1,37 @@
-import sys
 import torch
 
+from nagisa.core.misc.testing import ReloadModuleTestCase
 from nagisa.dl.torch.misc.testing import TorchTestCase
 
 
-class BaseDatasetTestCase(TorchTestCase):
+class BaseDatasetTestCase(TorchTestCase, ReloadModuleTestCase):
+    drop_modules = [
+        '^nagisa.dl.torch',
+    ]
+    attach = [
+        ['data_module', 'nagisa.dl.torch.data'],
+    ]
+
     def setUp(self):
-        for n in list(filter(lambda x: x.startswith("nagisa.dl.torch"), sys.modules)):
-            del sys.modules[n]
+        super().setUp()
 
-        from nagisa.dl.torch import data as s
-
-        self.s = s
-
-        @s.Resource.r
+        @self.data_module.Resource.r
         def id_list():
             return list(range(100))
 
-        @s.Item.r("item1")
-        @s.Item.r("item2")
-        @s.Item.r("item3")
+        @self.data_module.Item.r("item1")
+        @self.data_module.Item.r("item2")
+        @self.data_module.Item.r("item3")
         def item1(id):
             return id
 
-        s.item_keys.set(["item1", "item2", "item3"])
-        self.dataset = s.get_dataset("", "", cfg="mock")
-
+        self.data_module.item_keys.set(["item1", "item2", "item3"])
+        self.dataset = self.data_module.get_dataset("", "", cfg="mock")
 
 
 class TestDataLoader(BaseDatasetTestCase):
     def test_dataloader(self):
-        s = self.s
+        s = self.data_module
 
         @s.Collate.r
         def item2(cfg, items):
@@ -55,7 +56,7 @@ class TestDataLoader(BaseDatasetTestCase):
         self.assertListEqual(list(loader), expected)
 
     def test_dataloader_torch_default_collate(self):
-        s = self.s
+        s = self.data_module
 
         @s.Collate.r
         def item2(cfg, items):

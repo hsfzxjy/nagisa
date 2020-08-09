@@ -1,5 +1,5 @@
-import functools
 import unittest
+import functools
 
 import torch
 import numpy as np

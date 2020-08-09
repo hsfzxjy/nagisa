@@ -5,25 +5,27 @@ import shutil
 import tempfile
 import unittest
 
+from nagisa.core.misc.testing import ReloadModuleTestCase
 
-class TestLogging(unittest.TestCase):
+
+class TestLogging(ReloadModuleTestCase):
+
+    drop_modules = [
+        '^nagisa',
+        '^logging',
+    ]
+    attach = [
+        ['contrib_logging', 'nagisa.contrib.logging'],
+        ['logging', 'logging'],
+    ]
+
     def tearDown(self):
-        for name in list(sys.modules):
-            if name.startswith('nagisa') or name.startswith('logging'):
-                del sys.modules[name]
-
         if hasattr(self, 'logdir'):
             shutil.rmtree(self.logdir, ignore_errors=True)
 
     def setUp(self):
-        self.tearDown()
-
-        from nagisa.contrib import logging as contrib_logging
-        import logging
-        self.contrib_logging = contrib_logging
-        self.logging = logging
+        super().setUp()
         self.contrib_logging.init_logging()
-
         self.logdir = tempfile.mkdtemp()
 
     def get_content(self, filename):

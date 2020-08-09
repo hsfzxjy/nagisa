@@ -3,9 +3,9 @@ import unittest
 
 import torch
 
+from nagisa.dl.torch.misc.io import load_state_dict
 from nagisa.dl.torch.misc.testing import TorchTestCase
 from nagisa.core.misc.io import download_url_to_file, prepare_resource
-from nagisa.dl.torch.misc.io import load_state_dict
 
 skip_if_local = unittest.skipIf(os.getenv("LOCAL") is not None, "local testing")
 

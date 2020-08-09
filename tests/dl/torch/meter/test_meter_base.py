@@ -1,24 +1,22 @@
 import unittest
 
-
-class TestBase(unittest.TestCase):
-    def setUp(self):
-        import sys
-
-        for name in list(sys.modules):
-            if name.startswith("nagisa.dl.torch.meter"):
-                del sys.modules[name]
-
-        from nagisa.dl.torch.meter import meter_base
-
-        self.meters = meter_base
+from nagisa.core.misc.testing import ReloadModuleTestCase
 
 
 def f(self):
     ...
 
 
-class TestMeterBase(TestBase):
+class BaseTestCase(ReloadModuleTestCase):
+    drop_modules = [
+        '^nagisa.dl.torch.meter',
+    ]
+    attach = [
+        ['meters', 'nagisa.dl.torch.meter.meter_base'],
+    ]
+
+
+class TestMeterBase(BaseTestCase):
     def test_subclass(self):
         class MeterLike:
 

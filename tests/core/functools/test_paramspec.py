@@ -1,5 +1,6 @@
 import types
 import unittest
+
 from nagisa.core import functools
 
 

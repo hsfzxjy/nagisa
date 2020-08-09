@@ -1,6 +1,8 @@
 import argparse
 import unittest
+
 from nagisa.core.state import config
+from nagisa.core.misc.testing import ReloadModuleTestCase
 
 from .test_envvar import mock_env
 
@@ -101,7 +103,14 @@ class Test_merge(unittest.TestCase):
         )
 
 
-class TestSingleton(unittest.TestCase):
+class TestSingleton(ReloadModuleTestCase):
+    drop_modules = [
+        '^nagisa.core.state.config',
+    ]
+    attach = [
+        ['config_module', '^nagisa.core.state.config'],
+    ]
+
     def setUp(self):
         import sys, importlib
 

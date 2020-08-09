@@ -3,30 +3,23 @@ import unittest
 import torch
 
 from nagisa.dl.torch.misc.testing import TorchTestCase
+from nagisa.core.misc.testing import ReloadModuleTestCase
 
 t = torch.tensor
 
 
-class TestBase(TorchTestCase):
-    def setUp(self):
-        import sys
-
-        for name in list(sys.modules):
-            if name.startswith("nagisa.dl.torch.meter"):
-                del sys.modules[name]
-
-        from nagisa.dl.torch.meter import (
-            meter_base as mb,
-            meter_group as mg,
-            meter_builtins as mbi,
-        )
-
-        self.mb = mb
-        self.mg = mg
-        self.mbi = mbi
+class BaseTestCase(ReloadModuleTestCase, TorchTestCase):
+    drop_modules = [
+        '^nagisa.dl.torch.meter',
+    ]
+    attach = [
+        ['mb', 'nagisa.dl.torch.meter.meter_base'],
+        ['mg', 'nagisa.dl.torch.meter.meter_group'],
+        ['mbi', 'nagisa.dl.torch.meter.meter_builtins'],
+    ]
 
 
-class TestBaseMeterGroup(TestBase):
+class TestBaseMeterGroup(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.group = self.mg.BaseMeterGroup()
@@ -167,7 +160,7 @@ class TestBaseMeterGroup(TestBase):
         )
 
 
-class TestDefaultMeterGroup(TestBase):
+class TestDefaultMeterGroup(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.group = self.mg.DefaultMeterGroup()
