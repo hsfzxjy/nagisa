@@ -12,13 +12,12 @@ from nagisa.core.misc.serialization import load_yaml_with_base, dump_yaml
 
 class NodeMeta:
 
-    __slots__ = ["attributes", "type", "is_container", "is_alias"]
+    __slots__ = ["attributes", "type", "is_container"]
 
-    def __init__(self, type_=None, attributes=None, is_container=False, is_alias=False):
+    def __init__(self, type_=None, attributes=None, is_container=False):
         self.type = type_
         self.attributes = attributes
         self.is_container = is_container
-        self.is_alias = is_alias
 
 
 class _AttributeSlots:
